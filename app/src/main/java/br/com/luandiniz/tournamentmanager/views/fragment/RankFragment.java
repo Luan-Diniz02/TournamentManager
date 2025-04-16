@@ -166,17 +166,17 @@ public class RankFragment extends Fragment {
     }
 
     private void abrirOpcoesDuelista(Duelista duelista, int position) {
-        String[] opcoes = {"Editar Dados", "Adicionar Pontos", "Cancelar"};
+        String[] opcoes = {"Adicionar Pontos","Editar Dados", "Cancelar"};
 
         new AlertDialog.Builder(requireContext())
                 .setTitle(duelista.getNome())
                 .setItems(opcoes, (dialog, which) -> {
                     switch (which) {
-                        case 0: // Editar Dados
-                            abrirDialogEdicao(duelista, position);
-                            break;
-                        case 1: // Adicionar Pontos
+                        case 0: // Adicionar Pontos
                             abrirDialogAdicionarPontos(duelista, position);
+                            break;
+                        case 1: // Editar Dados
+                            abrirDialogEdicao(duelista, position);
                             break;
                         case 2: // Cancelar
                             dialog.dismiss();
