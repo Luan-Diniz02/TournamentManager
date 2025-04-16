@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/historico"
+        android:title="Historico"
+        android:icon="@drawable/ic_historico"
+        android:enabled="true"/>
+
+    <item
+        android:id="@+id/rank"
+        android:title="Rank"
+        android:icon="@drawable/ic_rank"
+        android:enabled="true"/>
+
+    <item
+        android:id="@+id/pvp"
+        android:title="Torneios"
+        android:icon="@drawable/ic_pvp"
+        android:enabled="true"/>
+</menu>

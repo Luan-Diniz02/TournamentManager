@@ -1,44 +1,42 @@
 package br.com.luandiniz.tournamentmanager.views;
 
 import android.os.Bundle;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.fragment.app.Fragment;
 
 import com.leinardi.android.speeddial.SpeedDialActionItem;
 import com.leinardi.android.speeddial.SpeedDialView;
 
-import java.util.Collections;
-import java.util.List;
-
 import br.com.luandiniz.tournamentmanager.R;
-import br.com.luandiniz.tournamentmanager.adapter.Adapter;
-import br.com.luandiniz.tournamentmanager.dao.DAOSQLITE;
-import br.com.luandiniz.tournamentmanager.model.Duelista;
+import br.com.luandiniz.tournamentmanager.RankFragment;
+import br.com.luandiniz.tournamentmanager.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
 
     private SpeedDialView speedDialView;
-    private RecyclerView recyclerView;
-    private Adapter adapter;
-    private DAOSQLITE daosqlite;
+    private ActivityMainBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
         inicializaViews();
         inicializaListeners();
-        daosqlite = DAOSQLITE.getInstance(this);
-        verificaEAdicionaDuelistasExemplo();
-        configurarRecyclerView();
+
+        // Carregar RankFragment por padrão
+        if (savedInstanceState == null) {
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.container, new RankFragment())
+                    .commit();
+        }
     }
 
     private void inicializaViews() {
         speedDialView = findViewById(R.id.activity_main_speeddial_menu);
-        recyclerView = findViewById(R.id.recycler_view_duelistas);
 
         speedDialView.setMainFabClosedDrawable(getDrawable(R.drawable.ic_barra));
         speedDialView.addActionItem(new SpeedDialActionItem.Builder(R.id.menu_acao1, R.drawable.ic_add)
@@ -58,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private void inicializaListeners() {
         speedDialView.setOnActionSelectedListener(actionItem -> {
             if (actionItem.getId() == R.id.menu_acao1) {
-                // TODO: Implementar adição de duelista (ex.: abrir Activity ou Dialog)
+                // TODO: Implementar adição de duelista
             } else if (actionItem.getId() == R.id.menu_acao2) {
                 // TODO: Implementar edição de duelista
             } else if (actionItem.getId() == R.id.menu_acao3) {
@@ -66,29 +64,29 @@ public class MainActivity extends AppCompatActivity {
             }
             return false; // Fecha o SpeedDial após a ação
         });
-    }
 
-    private void verificaEAdicionaDuelistasExemplo() {
-        if (daosqlite.listarDuelistas().isEmpty()) {
-            daosqlite.adicionarDuelista(new Duelista("Duelista 1", 5, 2, 1));
-            daosqlite.adicionarDuelista(new Duelista("Duelista 2", 3, 4, 0));
-            daosqlite.adicionarDuelista(new Duelista("Duelista 3", 6, 1, 2));
-        }
-    }
+        binding.bottomNavigation.setOnItemSelectedListener(item -> {
+            Fragment selectedFragment = null;
+            int itemId = item.getItemId();
 
-    private void configurarRecyclerView() {
-        List<Duelista> duelistas = daosqlite.listarDuelistas();
-        // Ordenar por pontos em ordem decrescente
-        Collections.sort(duelistas, (d1, d2) -> {
-            int comparePontos = Integer.compare(d2.getPontos(), d1.getPontos());
-            if (comparePontos == 0) {
-                // Desempate por vitórias
-                return Integer.compare(d2.getVitorias(), d1.getVitorias());
+            if (itemId == R.id.rank) {
+                selectedFragment = new RankFragment();
+            } else if (itemId == R.id.historico) {
+//                selectedFragment = new HistoricoFragment();
+                Toast.makeText(this, "Em desenvolvimento", Toast.LENGTH_SHORT).show();
+            } else if (itemId == R.id.pvp) {
+//                selectedFragment = new TorneiosFragment();
+                Toast.makeText(this, "Em desenvolvimento", Toast.LENGTH_SHORT).show();
+
             }
-            return comparePontos;
+
+            if (selectedFragment != null) {
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.container, selectedFragment)
+                        .commit();
+                return true;
+            }
+            return false;
         });
-        adapter = new Adapter(duelistas, this);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(adapter);
     }
 }
