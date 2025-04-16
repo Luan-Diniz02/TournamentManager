@@ -14,7 +14,7 @@ import br.com.luandiniz.tournamentmanager.model.Duelista;
 public class DAOSQLITE extends SQLiteOpenHelper {
 
     private static DAOSQLITE instance;
-    private static final int DATABASE_VERSION = 3; // Incrementado para adicionar o campo participacoes
+    private static final int DATABASE_VERSION = 5;
 
     public DAOSQLITE(Context context) {
         super(context, "torneios", null, DATABASE_VERSION);
@@ -42,10 +42,8 @@ public class DAOSQLITE extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion < 3) {
-            // Adicionar o campo participacoes com valor padrão 2
-            db.execSQL("ALTER TABLE Duelistas ADD COLUMN participacoes INTEGER NOT NULL DEFAULT 2");
-        }
+        db.execSQL("DROP TABLE IF EXISTS Duelistas");
+        onCreate(db);
     }
 
     public List<Duelista> listarDuelistas() {
@@ -85,6 +83,74 @@ public class DAOSQLITE extends SQLiteOpenHelper {
             values.put("participacoes", duelista.getParticipacao());
             values.put("pontos", duelista.getPontos());
             db.insert("Duelistas", null, values);
+        } finally {
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        }
+
+    }
+
+    public void atualizarDuelista(Duelista duelista) {
+        SQLiteDatabase db = null;
+        try {
+            db = this.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put("nome", duelista.getNome());
+            values.put("vitorias", duelista.getVitorias());
+            values.put("derrotas", duelista.getDerrotas());
+            values.put("empates", duelista.getEmpates());
+            values.put("participacoes", duelista.getParticipacao());
+            values.put("pontos", duelista.getPontos());
+            db.update("Duelistas", values, "id = ?", new String[]{String.valueOf(duelista.getId())});
+        } finally {
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        }
+    }
+
+    public boolean removerDuelista(int id) {
+        SQLiteDatabase db = null;
+        try {
+            db = this.getWritableDatabase();
+            int rowsAffected = db.delete("Duelistas", "id = ?", new String[]{String.valueOf(id)});
+            return rowsAffected > 0;
+        } finally {
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        }
+    }
+
+    public void adicionarPontos(int id, int vitorias, int derrotas, int empates) {
+        SQLiteDatabase db = null;
+        try {
+            db = this.getWritableDatabase();
+            Cursor cursor = db.rawQuery("SELECT * FROM Duelistas WHERE id = ?", new String[]{String.valueOf(id)});
+            if (cursor.moveToFirst()) {
+                int vitoriasAtuais = cursor.getInt(cursor.getColumnIndexOrThrow("vitorias"));
+                int derrotasAtuais = cursor.getInt(cursor.getColumnIndexOrThrow("derrotas"));
+                int empatesAtuais = cursor.getInt(cursor.getColumnIndexOrThrow("empates"));
+                int participacoesAtuais = cursor.getInt(cursor.getColumnIndexOrThrow("participacoes"));
+
+                // Atualiza os valores
+                int novasVitorias = vitoriasAtuais + vitorias;
+                int novasDerrotas = derrotasAtuais + derrotas;
+                int novosEmpates = empatesAtuais + empates;
+                int novasParticipacoes = participacoesAtuais + 1;
+                int novosPontos = (novasVitorias * 3) + novosEmpates + participacoesAtuais;
+
+                ContentValues values = new ContentValues();
+                values.put("vitorias", novasVitorias);
+                values.put("derrotas", novasDerrotas);
+                values.put("empates", novosEmpates);
+                values.put("participacoes", novasParticipacoes);
+                values.put("pontos", novosPontos);
+
+                db.update("Duelistas", values, "id = ?", new String[]{String.valueOf(id)});
+            }
+            cursor.close();
         } finally {
             if (db != null && db.isOpen()) {
                 db.close();

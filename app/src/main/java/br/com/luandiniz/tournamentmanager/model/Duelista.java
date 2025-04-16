@@ -65,7 +65,7 @@ public class Duelista {
     }
 
     public void calcularPontos(){
-        this.pontos = (vitorias * 3) + empates;
+        this.pontos = (vitorias * 3) + empates + participacoes;
     }
 
     public int getParticipacao() {
@@ -74,6 +74,7 @@ public class Duelista {
 
     public void setParticipacao(int participacoes) {
         this.participacoes = participacoes;
+        calcularPontos();
     }
 
 

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/activity_edit_nome"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nome"
+        android:inputType="textPersonName"/>
+
+    <EditText
+        android:id="@+id/activity_edit_vitorias"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Vitórias"
+        android:inputType="number"/>
+
+    <EditText
+        android:id="@+id/activity_edit_derrotas"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Derrotas"
+        android:inputType="number"/>
+
+    <EditText
+        android:id="@+id/activity_edit_empates"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Empates"
+        android:inputType="number"/>
+
+    <EditText
+        android:id="@+id/activity_edit_participacao"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Participação"
+        android:inputType="number"/>
+
+</LinearLayout>
