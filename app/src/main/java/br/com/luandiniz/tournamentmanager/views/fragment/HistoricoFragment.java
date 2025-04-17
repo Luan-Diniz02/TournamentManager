@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -44,7 +45,20 @@ public class HistoricoFragment extends Fragment implements HistoricoTorneioAdapt
         List<Torneio> torneios = dao.listarTorneios();
         List<Duelista> duelistas = dao.listarDuelistas();
 
+        Log.d("HistoricoFragment", "Torneios carregados: " + torneios.size());
+        for (Torneio t : torneios) {
+            Log.d("HistoricoFragment", "Torneio: " + t.getNome() + ", Duelistas: " + t.getDuelistas().size());
+        }
+
         adapter = new HistoricoTorneioAdapter(torneios, duelistas, this);
+        adapter.setOnTorneioClickListener(torneio -> {
+            TorneioFragment fragment = TorneioFragment.newInstance(torneio.getId());
+            requireActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.container, fragment) // Ajuste o ID do contêiner
+                    .addToBackStack(null)
+                    .commit();
+        });
         recyclerView.setAdapter(adapter);
 
         // Mostrar mensagem se não houver torneios
@@ -61,9 +75,11 @@ public class HistoricoFragment extends Fragment implements HistoricoTorneioAdapt
 
     @Override
     public void onTorneioClick(Torneio torneio) {
-        // Abrir detalhes do torneio selecionado
-//        Intent intent = new Intent(getActivity(), DetalhesTorneioActivity.class);
-//        intent.putExtra("TORNEIO_ID", torneio.getId());
-//        startActivity(intent);
+        TorneioFragment fragment = TorneioFragment.newInstance(torneio.getId());
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.container, fragment)
+                .addToBackStack(null)
+                .commit();
     }
 }

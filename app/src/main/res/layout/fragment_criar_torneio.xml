@@ -49,7 +49,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:hint="Rodadas"
-            android:inputType="numberDecimal"/>
+            android:inputType="number"/>
 
         <CheckBox
             android:id="@+id/fragment_criar_check_top_cut"

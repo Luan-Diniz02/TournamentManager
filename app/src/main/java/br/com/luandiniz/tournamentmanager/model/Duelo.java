@@ -1,11 +1,53 @@
 package br.com.luandiniz.tournamentmanager.model;
 
-public class Duelo {
-    private int id, idDuelista1, idDuelista2, idRodada, idVencedor;
-    public Duelo(int idDuelista1, int idDuelista2, int idRodada) {
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class Duelo implements Parcelable {
+    private int id;
+    private int idRodada;
+    private int idDuelista1;
+    private int idDuelista2;
+    private Integer idVencedor;
+
+    public Duelo(int idRodada, int idDuelista1, int idDuelista2) {
+        this.idRodada = idRodada;
         this.idDuelista1 = idDuelista1;
         this.idDuelista2 = idDuelista2;
-        this.idRodada = idRodada;
+    }
+
+    protected Duelo(Parcel in) {
+        id = in.readInt();
+        idRodada = in.readInt();
+        idDuelista1 = in.readInt();
+        idDuelista2 = in.readInt();
+        idVencedor = in.readInt() == -1 ? null : in.readInt();
+    }
+
+    public static final Creator<Duelo> CREATOR = new Creator<Duelo>() {
+        @Override
+        public Duelo createFromParcel(Parcel in) {
+            return new Duelo(in);
+        }
+
+        @Override
+        public Duelo[] newArray(int size) {
+            return new Duelo[size];
+        }
+    };
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(id);
+        dest.writeInt(idRodada);
+        dest.writeInt(idDuelista1);
+        dest.writeInt(idDuelista2);
+        dest.writeInt(idVencedor == null ? -1 : idVencedor);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
     }
 
     public int getId() {
@@ -14,6 +56,14 @@ public class Duelo {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public int getIdRodada() {
+        return idRodada;
+    }
+
+    public void setIdRodada(int idRodada) {
+        this.idRodada = idRodada;
     }
 
     public int getIdDuelista1() {
@@ -32,19 +82,11 @@ public class Duelo {
         this.idDuelista2 = idDuelista2;
     }
 
-    public int getIdRodada() {
-        return idRodada;
-    }
-
-    public void setIdRodada(int idRodada) {
-        this.idRodada = idRodada;
-    }
-
-    public int getIdVencedor() {
+    public Integer getIdVencedor() {
         return idVencedor;
     }
 
-    public void setIdVencedor(int idVencedor) {
+    public void setIdVencedor(Integer idVencedor) {
         this.idVencedor = idVencedor;
     }
 }

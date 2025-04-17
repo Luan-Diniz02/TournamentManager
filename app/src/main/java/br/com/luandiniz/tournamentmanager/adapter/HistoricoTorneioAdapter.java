@@ -26,6 +26,10 @@ public class HistoricoTorneioAdapter extends RecyclerView.Adapter<HistoricoTorne
         void onTorneioClick(Torneio torneio);
     }
 
+    public void setOnTorneioClickListener(OnTorneioClickListener listener) {
+        this.listener = listener;
+    }
+
     public HistoricoTorneioAdapter(List<Torneio> torneios, List<Duelista> duelistas, OnTorneioClickListener listener) {
         this.torneios = torneios;
         this.duelistas = duelistas;
@@ -44,6 +48,12 @@ public class HistoricoTorneioAdapter extends RecyclerView.Adapter<HistoricoTorne
     public void onBindViewHolder(@NonNull TorneioViewHolder holder, int position) {
         Torneio torneio = torneios.get(position);
         holder.bind(torneio, duelistas, listener);
+
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onTorneioClick(torneio);
+            }
+        });
     }
 
     @Override
@@ -87,7 +97,7 @@ public class HistoricoTorneioAdapter extends RecyclerView.Adapter<HistoricoTorne
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
             tvData.setText(sdf.format(torneio.getData()));
 
-            tvRodadas.setText(String.valueOf(torneio.getRodadas()));
+            tvRodadas.setText(String.valueOf(torneio.getQuantRodadas()));
             tvParticipantes.setText(String.valueOf(torneio.getDuelistas().size()));
 
             itemView.setOnClickListener(v -> {

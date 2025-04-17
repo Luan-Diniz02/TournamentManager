@@ -20,7 +20,7 @@ import java.util.Date;
 import java.util.List;
 
 import br.com.luandiniz.tournamentmanager.R;
-import br.com.luandiniz.tournamentmanager.adapter.Adapter;
+import br.com.luandiniz.tournamentmanager.adapter.RankAdapter;
 import br.com.luandiniz.tournamentmanager.dao.DAOSQLITE;
 import br.com.luandiniz.tournamentmanager.model.Duelista;
 import br.com.luandiniz.tournamentmanager.model.Torneio;
@@ -30,8 +30,7 @@ public class CriarTorneioFragment extends Fragment {
     private EditText nomeTorneio, nomeDuelista, rodadas;
     private Button addDuelista, criarTorneio, addDuelistaHistorico;
     private CheckBox topCut;
-    private RecyclerView recyclerView;
-    Adapter adapter;
+    RankAdapter rankAdapter;
     private List<Duelista> duelistasTorneio;
     private List<Duelista> listaDuelista;
     private DAOSQLITE daosqlite;
@@ -51,14 +50,14 @@ public class CriarTorneioFragment extends Fragment {
 
         // Reaproveitando o adapter existente
         duelistasTorneio = new ArrayList<>(); // Lista vazia inicial
-        adapter = new Adapter(duelistasTorneio, getContext());
+        rankAdapter = new RankAdapter(duelistasTorneio, getContext());
 
         // Configurando listeners se necessário
-        adapter.setOnItemClickListener((duelista, position) -> {
+        rankAdapter.setOnItemClickListener((duelista, position) -> {
             // Lógica quando clicar em um duelista
         });
 
-        adapter.setOnItemLongClickListener((duelista, position) -> {
+        rankAdapter.setOnItemLongClickListener((duelista, position) -> {
             // Lógica quando pressionar longo em um duelista
         });
 
@@ -76,7 +75,7 @@ public class CriarTorneioFragment extends Fragment {
             criarTorneio();
         });
 
-        recyclerView.setAdapter(adapter);
+        recyclerView.setAdapter(rankAdapter);
         return view;
     }
 
@@ -86,13 +85,12 @@ public class CriarTorneioFragment extends Fragment {
             return;
         }
 
-        // Criar array de nomes e array de seleção
         String[] nomes = new String[listaDuelista.size()];
         boolean[] selecionados = new boolean[listaDuelista.size()];
 
         for (int i = 0; i < listaDuelista.size(); i++) {
             nomes[i] = listaDuelista.get(i).getNome();
-            selecionados[i] = false; // Inicialmente não selecionado
+            selecionados[i] = false;
         }
 
         new AlertDialog.Builder(requireContext())
@@ -106,31 +104,23 @@ public class CriarTorneioFragment extends Fragment {
                         if (selecionados[i]) {
                             Duelista d = listaDuelista.get(i);
 
-                            // Cria NOVA instância com estatísticas zeradas
-                            Duelista novoDuelista = new Duelista(
-                                    d.getNome(),  // Mantém apenas o nome
-                                    0,            // Vitórias zeradas
-                                    0,            // Derrotas zeradas
-                                    0             // Empates zerados
-                            );
-                            novoDuelista.setId(d.getId()); // Mantém o ID original
-
-                            // Verifica se já não foi adicionado (por nome)
+                            // Verifica se já não foi adicionado (por ID agora, não por nome)
                             boolean jaExiste = false;
                             for (Duelista existente : duelistasTorneio) {
-                                if (existente.getNome().equalsIgnoreCase(novoDuelista.getNome())) {
+                                if (existente.getId() == d.getId()) {
                                     jaExiste = true;
                                     break;
                                 }
                             }
 
                             if (!jaExiste) {
-                                duelistasTorneio.add(novoDuelista);
+                                // Adiciona o duelista diretamente (com ID existente)
+                                duelistasTorneio.add(d);
                                 adicionados++;
                             }
                         }
                     }
-                    adapter.notifyDataSetChanged();
+                    rankAdapter.notifyDataSetChanged();
                     Toast.makeText(getContext(),
                             adicionados + " duelistas adicionados",
                             Toast.LENGTH_SHORT).show();
@@ -158,9 +148,38 @@ public class CriarTorneioFragment extends Fragment {
             return;
         }
 
-        Duelista duelista = new Duelista(nome, 0, 0, 0);
+        // Verifica se o duelista já existe na lista geral
+        Duelista existente = null;
+        for (Duelista d : listaDuelista) {
+            if (d.getNome().equalsIgnoreCase(nome)) {
+                existente = d;
+                break;
+            }
+        }
+
+        Duelista duelista;
+        if (existente != null) {
+            // Usa o duelista existente
+            duelista = existente;
+        } else {
+            // Cria novo duelista (sem ID ainda)
+            duelista = new Duelista(nome);
+        }
+
+        // Verifica se já não foi adicionado ao torneio
+        for (Duelista d : duelistasTorneio) {
+            if (d.getId() > 0 && d.getId() == duelista.getId()) {
+                Toast.makeText(getContext(), "Duelista já adicionado", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (d.getNome().equalsIgnoreCase(duelista.getNome())) {
+                Toast.makeText(getContext(), "Duelista já adicionado", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
         duelistasTorneio.add(duelista);
-        adapter.notifyItemInserted(duelistasTorneio.size() - 1); // Notifica o adapter
+        rankAdapter.notifyItemInserted(duelistasTorneio.size() - 1);
         nomeDuelista.getText().clear();
     }
 
@@ -178,8 +197,8 @@ public class CriarTorneioFragment extends Fragment {
             return;
         }
 
-        if (rodadasStr.isEmpty()) {
-            Toast.makeText(getContext(), "Informe o número de rodadas", Toast.LENGTH_SHORT).show();
+        if (rodadasStr.isEmpty() || Integer.parseInt(rodadasStr) <= 0) {
+            Toast.makeText(getContext(), "Informe um número válido de rodadas", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -189,14 +208,25 @@ public class CriarTorneioFragment extends Fragment {
             // Cria o torneio
             Torneio torneio = new Torneio(
                     nomeTorneioStr,
-                    new Date(), // Data atual
-                    duelistasTorneio.stream().map(Duelista::getId).toList(),
+                    new Date(),
+                    new ArrayList<>(),
                     topCut.isChecked()
             );
-            torneio.setRodadas(numRodadas); // Define o número de rodadas
+            torneio.setQuantRodadas(numRodadas);
 
             // SALVA NO BANCO DE DADOS
-            daosqlite.adicionarTorneio(torneio);
+            long idTorneio = daosqlite.adicionarTorneio(torneio);
+
+            // Adiciona os duelistas à tabela TorneioDuelista
+            for (Duelista duelista : duelistasTorneio) {
+                if (duelista.getId() <= 0) {
+                    // Insere o duelista e obtém o ID gerado
+                    long idDuelista = daosqlite.adicionarDuelista(duelista);
+                    duelista.setId((int) idDuelista); // Atualiza o ID no objeto
+                }
+                // Associa ao torneio
+                daosqlite.adicionarDuelistaAoTorneio((int) idTorneio, duelista.getId());
+            }
 
             Toast.makeText(getContext(), "Torneio criado com sucesso!", Toast.LENGTH_SHORT).show();
 
@@ -206,10 +236,13 @@ public class CriarTorneioFragment extends Fragment {
             nomeDuelista.getText().clear();
             topCut.setChecked(false);
             duelistasTorneio.clear();
-            adapter.notifyDataSetChanged();
+            rankAdapter.notifyDataSetChanged();
 
         } catch (NumberFormatException e) {
             Toast.makeText(getContext(), "Número de rodadas inválido", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "Erro ao criar torneio: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            e.printStackTrace();
         }
     }
 }

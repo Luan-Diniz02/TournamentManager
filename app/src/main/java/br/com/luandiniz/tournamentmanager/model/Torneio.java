@@ -7,11 +7,11 @@ import java.util.List;
 public class Torneio {
     private String nome;
     private Date data;
-    private List<Integer> duelistas;
-    private List<Rodada> lista_rodadas;
-    private int id, rodadas, idCampeao;
+    private List<Duelista> duelistas;
+    private int id, quantRodadas;
+    private Integer idCampeao;
     private boolean topcut;
-    public Torneio(String nome, Date data, List<Integer> duelistas, boolean topcut) {
+    public Torneio(String nome, Date data, List<Duelista> duelistas, boolean topcut) {
         this.nome = nome;
         this.data = data;
         this.duelistas = duelistas;
@@ -34,11 +34,11 @@ public class Torneio {
         this.data = data;
     }
 
-    public List<Integer> getDuelistas() {
+    public List<Duelista> getDuelistas() {
         return new ArrayList<>(duelistas);
     }
 
-    public void setDuelistas(List<Integer> duelistas) {
+    public void setDuelistas(List<Duelista> duelistas) {
         this.duelistas = duelistas;
     }
 
@@ -50,19 +50,19 @@ public class Torneio {
         this.id = id;
     }
 
-    public int getRodadas() {
-        return rodadas;
+    public int getQuantRodadas() {
+        return quantRodadas;
     }
 
-    public void setRodadas(int rodadas) {
-        this.rodadas = rodadas;
+    public void setQuantRodadas(int quantRodadas) {
+        this.quantRodadas = quantRodadas;
     }
 
-    public int getIdCampeao() {
+    public Integer getIdCampeao() {
         return idCampeao;
     }
 
-    public void setIdCampeao(int idCampeao) {
+    public void setIdCampeao(Integer idCampeao) {
         this.idCampeao = idCampeao;
     }
 
@@ -74,36 +74,13 @@ public class Torneio {
         this.topcut = topcut;
     }
 
-    public List<Rodada> getLista_rodadas() {
-        return lista_rodadas;
-    }
-
-    public void setLista_rodadas(List<Rodada> lista_rodadas) {
-        this.lista_rodadas = lista_rodadas;
-    }
-
-    public Rodada gerarRodadaSuica() {
-        // Ordenar os duelistas (aqui apenas por ID, mas pode ser por pontuação)
-        List<Integer> duelistasOrdenados = new ArrayList<>(duelistas);
-        duelistasOrdenados.sort(Integer::compareTo);
-
-        // Criar os duelos
-        List<Duelo> duelos = new ArrayList<>();
-        for (int i = 0; i < duelistasOrdenados.size() - 1; i += 2) {
-            int idDuelista1 = duelistasOrdenados.get(i);
-            int idDuelista2 = duelistasOrdenados.get(i + 1);
-            Duelo duelo = new Duelo(idDuelista1, idDuelista2, lista_rodadas.size() + 1);
-            duelos.add(duelo);
+    public Duelista buscarDuelistaPorId(int id) {
+        for (Duelista duelista : duelistas) {
+            if (duelista.getId() == id) {
+                return duelista;
+            }
         }
-
-        // Criar a rodada
-        Rodada rodada = new Rodada(this.id, duelos);
-        if (lista_rodadas == null) {
-            lista_rodadas = new ArrayList<>();
-        }
-        lista_rodadas.add(rodada);
-
-        return rodada;
+        return null; // Retorna null se não encontrar o duelista
     }
 
 }

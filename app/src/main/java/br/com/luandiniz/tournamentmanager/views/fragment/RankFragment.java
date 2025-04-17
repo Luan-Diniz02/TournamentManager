@@ -18,14 +18,14 @@ import java.util.Collections;
 import java.util.List;
 
 import br.com.luandiniz.tournamentmanager.R;
-import br.com.luandiniz.tournamentmanager.adapter.Adapter;
+import br.com.luandiniz.tournamentmanager.adapter.RankAdapter;
 import br.com.luandiniz.tournamentmanager.dao.DAOSQLITE;
 import br.com.luandiniz.tournamentmanager.model.Duelista;
 
 public class RankFragment extends Fragment {
 
     private RecyclerView recyclerView;
-    private Adapter adapter;
+    private RankAdapter rankAdapter;
     private DAOSQLITE daosqlite;
     private List<Duelista> duelistas;
 
@@ -43,11 +43,11 @@ public class RankFragment extends Fragment {
         carregarDuelistas();
 
         // Configura o adapter
-        adapter = new Adapter(duelistas, getContext());
-        adapter.setOnItemClickListener((duelista, position) -> {
+        rankAdapter = new RankAdapter(duelistas, getContext());
+        rankAdapter.setOnItemClickListener((duelista, position) -> {
             abrirOpcoesDuelista(duelista, position);
         });
-        recyclerView.setAdapter(adapter);
+        recyclerView.setAdapter(rankAdapter);
 
         // Configura o ItemTouchHelper para swipe
         setupItemTouchHelper();
@@ -62,8 +62,8 @@ public class RankFragment extends Fragment {
         }
         ordenarDuelistas();
 
-        if (adapter != null) {
-            adapter.atualizarLista(duelistas);
+        if (rankAdapter != null) {
+            rankAdapter.atualizarLista(duelistas);
         }
     }
 
@@ -115,9 +115,6 @@ public class RankFragment extends Fragment {
                 duelista.setEmpates(Integer.parseInt(editEmpates.getText().toString()));
                 duelista.setParticipacao(Integer.parseInt(editParticipacao.getText().toString()));
 
-                // Recalcula pontos (se necessário)
-                duelista.setPontos(calcularPontos(duelista));
-
                 // Atualiza no banco de dados
                 daosqlite.atualizarDuelista(duelista);
             } catch (NumberFormatException e) {
@@ -135,9 +132,6 @@ public class RankFragment extends Fragment {
         builder.create().show();
     }
 
-    private int calcularPontos(Duelista duelista) {
-        return duelista.getVitorias() * 3 + duelista.getEmpates() + duelista.getParticipacao();
-    }
     private void setupItemTouchHelper() {
         ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(
                 0, ItemTouchHelper.RIGHT) {
@@ -165,7 +159,7 @@ public class RankFragment extends Fragment {
                                 }
                             })
                             .setNegativeButton("Cancelar", (dialog, which) -> {
-                                adapter.notifyItemChanged(position);
+                                rankAdapter.notifyItemChanged(position);
                             })
                             .setCancelable(false)
                             .show();
@@ -228,7 +222,6 @@ public class RankFragment extends Fragment {
                     duelista.setDerrotas(duelista.getDerrotas() + derrotasAdd);
                     duelista.setEmpates(duelista.getEmpates() + empatesAdd);
                     duelista.setParticipacao(duelista.getParticipacao() + 1);
-                    duelista.setPontos(calcularPontos(duelista));
 
                     // Atualiza no banco de dados
                     daosqlite.atualizarDuelista(duelista);

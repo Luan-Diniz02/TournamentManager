@@ -13,6 +13,15 @@ public class Duelista {
         this.pontos = vitorias*3 + empates + participacoes;
     }
 
+    public Duelista(String nome){
+        this.nome = nome;
+        this.vitorias = 0;
+        this.derrotas = 0;
+        this.empates = 0;
+        this.participacoes = 0;
+        this.pontos = 0;
+    }
+
     public String getNome() {
         return nome;
     }
@@ -76,6 +85,8 @@ public class Duelista {
         this.participacoes = participacoes;
         calcularPontos();
     }
+
+
 
 
 }

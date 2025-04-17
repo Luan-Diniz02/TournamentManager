@@ -4,7 +4,6 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -16,14 +15,14 @@ import java.util.List;
 import br.com.luandiniz.tournamentmanager.R;
 import br.com.luandiniz.tournamentmanager.model.Duelista;
 
-public class Adapter extends RecyclerView.Adapter<Adapter.MyViewHolder> {
+public class RankAdapter extends RecyclerView.Adapter<RankAdapter.MyViewHolder> {
 
     private List<Duelista> duelistas;
     private Context context;
     private OnItemClickListener onItemClickListener;
     private OnItemLongClickListener onItemLongClickListener;
 
-    public Adapter(List<Duelista> duelistas, Context context) {
+    public RankAdapter(List<Duelista> duelistas, Context context) {
         this.duelistas = duelistas != null ? duelistas : new ArrayList<>();
         this.context = context;
     }

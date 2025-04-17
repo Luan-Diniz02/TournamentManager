@@ -1,5 +1,6 @@
 package br.com.luandiniz.tournamentmanager.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Rodada {
@@ -27,7 +28,7 @@ public class Rodada {
     }
 
     public List<Duelo> getDuelos() {
-        return duelos;
+        return new ArrayList<>(duelos);
     }
 
     public void setDuelos(List<Duelo> duelos) {
