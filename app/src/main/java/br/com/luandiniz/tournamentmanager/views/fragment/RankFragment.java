@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -100,18 +101,31 @@ public class RankFragment extends Fragment {
         builder.setView(dialogView);
 
         builder.setPositiveButton("Salvar", (dialog, which) -> {
-            // Atualiza os dados do duelista
-            duelista.setNome(editNome.getText().toString());
-            duelista.setVitorias(Integer.parseInt(editVitorias.getText().toString()));
-            duelista.setDerrotas(Integer.parseInt(editDerrotas.getText().toString()));
-            duelista.setEmpates(Integer.parseInt(editEmpates.getText().toString()));
-            duelista.setParticipacao(Integer.parseInt(editParticipacao.getText().toString()));
+            try {
+                // Verifica se o nome está vazio
+                if (editNome.getText().toString().trim().isEmpty()) {
+                    Toast.makeText(requireContext(), "O nome não pode estar vazio.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
 
-            // Recalcula pontos (se necessário)
-            duelista.setPontos(calcularPontos(duelista));
+                // Atualiza os dados do duelista
+                duelista.setNome(editNome.getText().toString());
+                duelista.setVitorias(Integer.parseInt(editVitorias.getText().toString()));
+                duelista.setDerrotas(Integer.parseInt(editDerrotas.getText().toString()));
+                duelista.setEmpates(Integer.parseInt(editEmpates.getText().toString()));
+                duelista.setParticipacao(Integer.parseInt(editParticipacao.getText().toString()));
 
-            // Atualiza no banco de dados
-            daosqlite.atualizarDuelista(duelista);
+                // Recalcula pontos (se necessário)
+                duelista.setPontos(calcularPontos(duelista));
+
+                // Atualiza no banco de dados
+                daosqlite.atualizarDuelista(duelista);
+            } catch (NumberFormatException e) {
+                Toast.makeText(requireContext(), "Por favor, insira valores válidos.", Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                Toast.makeText(requireContext(), "Erro ao atualizar duelista: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+
 
             // Atualiza a lista
             carregarDuelistas();
@@ -122,8 +136,6 @@ public class RankFragment extends Fragment {
     }
 
     private int calcularPontos(Duelista duelista) {
-        // Implemente sua lógica de cálculo de pontos aqui
-        // Exemplo simples: 3 pontos por vitória, 1 por empate
         return duelista.getVitorias() * 3 + duelista.getEmpates() + duelista.getParticipacao();
     }
     private void setupItemTouchHelper() {
@@ -205,20 +217,26 @@ public class RankFragment extends Fragment {
             builder.setView(dialogView);
 
             builder.setPositiveButton("Adicionar", (dialog, which) -> {
-                // Obtém os valores a serem adicionados
-                int vitoriasAdd = Integer.parseInt(addVitorias.getText().toString());
-                int derrotasAdd = Integer.parseInt(addDerrotas.getText().toString());
-                int empatesAdd = Integer.parseInt(addEmpates.getText().toString());
+                try {
+                    // Obtém os valores a serem adicionados
+                    int vitoriasAdd = Integer.parseInt(addVitorias.getText().toString());
+                    int derrotasAdd = Integer.parseInt(addDerrotas.getText().toString());
+                    int empatesAdd = Integer.parseInt(addEmpates.getText().toString());
 
-                // Atualiza os valores do duelista
-                duelista.setVitorias(duelista.getVitorias() + vitoriasAdd);
-                duelista.setDerrotas(duelista.getDerrotas() + derrotasAdd);
-                duelista.setEmpates(duelista.getEmpates() + empatesAdd);
-                duelista.setParticipacao(duelista.getParticipacao() + 1);
-                duelista.setPontos(calcularPontos(duelista));
+                    // Atualiza os valores do duelista
+                    duelista.setVitorias(duelista.getVitorias() + vitoriasAdd);
+                    duelista.setDerrotas(duelista.getDerrotas() + derrotasAdd);
+                    duelista.setEmpates(duelista.getEmpates() + empatesAdd);
+                    duelista.setParticipacao(duelista.getParticipacao() + 1);
+                    duelista.setPontos(calcularPontos(duelista));
 
-                // Atualiza no banco de dados
-                daosqlite.atualizarDuelista(duelista);
+                    // Atualiza no banco de dados
+                    daosqlite.atualizarDuelista(duelista);
+                } catch (NumberFormatException e) {
+                    Toast.makeText(requireContext(), "Por favor, insira valores válidos", Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    Toast.makeText(requireContext(), "Erro ao atualizar duelista: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
 
                 // Atualiza a lista
                 carregarDuelistas();

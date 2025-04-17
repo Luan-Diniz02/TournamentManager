@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import br.com.luandiniz.tournamentmanager.R;
@@ -23,7 +24,7 @@ public class Adapter extends RecyclerView.Adapter<Adapter.MyViewHolder> {
     private OnItemLongClickListener onItemLongClickListener;
 
     public Adapter(List<Duelista> duelistas, Context context) {
-        this.duelistas = duelistas;
+        this.duelistas = duelistas != null ? duelistas : new ArrayList<>();
         this.context = context;
     }
 

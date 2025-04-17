@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".views.fragment.HistoricoFragment">
+
+    <!-- Cabeçalho -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardElevation="4dp"
+        app:cardCornerRadius="0dp"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Histórico de Torneios"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:padding="16dp"
+            android:textColor="@color/white" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Lista de Torneios -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_historico_torneios"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:padding="8dp"/>
+
+    <!-- Mensagem quando vazio -->
+    <TextView
+        android:id="@+id/tv_empty_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="Nenhum torneio encontrado"
+        android:textSize="18sp"
+        android:gravity="center"
+        android:visibility="gone"/>
+
+</LinearLayout>

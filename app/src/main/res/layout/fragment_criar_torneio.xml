@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".views.fragment.CriarTorneioFragment">
+
+    <EditText
+        android:id="@+id/fragment_criar_nome_torneio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nome do Torneio"
+        android:inputType="textCapWords"
+        android:layout_marginBottom="16dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
+
+        <EditText
+            android:id="@+id/fragment_criar_nome_duelista"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Nome do duelista"
+            android:inputType="textCapWords"/>
+
+        <Button
+            android:id="@+id/fragment_criar_btn_add_duelista"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ADD"
+            android:layout_marginStart="8dp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
+
+        <EditText
+            android:id="@+id/fragment_criar_rodadas"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Rodadas"
+            android:inputType="numberDecimal"/>
+
+        <CheckBox
+            android:id="@+id/fragment_criar_check_top_cut"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Top Cut"
+            />
+    </LinearLayout>
+
+
+
+    <Button
+        android:id="@+id/fragment_criar_btn_add_duelista_historico"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ADD Duelista Pelo Historico"
+        android:layout_gravity="center"
+        android:layout_marginStart="8dp"/>
+
+    <!-- Lista de Duelistas Adicionados -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/fragment_criar_recycler_duelistas"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Botão Iniciar -->
+    <Button
+        android:id="@+id/fragment_criar_btn_salvar_torneio"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Iniciar Torneio"
+        android:layout_gravity="center"
+        android:layout_marginTop="8dp"/>
+</LinearLayout>

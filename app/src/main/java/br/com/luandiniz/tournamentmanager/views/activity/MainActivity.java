@@ -18,6 +18,8 @@ import com.leinardi.android.speeddial.SpeedDialView;
 import br.com.luandiniz.tournamentmanager.R;
 import br.com.luandiniz.tournamentmanager.dao.DAOSQLITE;
 import br.com.luandiniz.tournamentmanager.model.Duelista;
+import br.com.luandiniz.tournamentmanager.views.fragment.CriarTorneioFragment;
+import br.com.luandiniz.tournamentmanager.views.fragment.HistoricoFragment;
 import br.com.luandiniz.tournamentmanager.views.fragment.RankFragment;
 import br.com.luandiniz.tournamentmanager.databinding.ActivityMainBinding;
 
@@ -82,12 +84,9 @@ public class MainActivity extends AppCompatActivity {
             if (itemId == R.id.rank) {
                 selectedFragment = new RankFragment();
             } else if (itemId == R.id.historico) {
-//                selectedFragment = new HistoricoFragment();
-                Toast.makeText(this, "Em desenvolvimento", Toast.LENGTH_SHORT).show();
+                selectedFragment = new HistoricoFragment();
             } else if (itemId == R.id.pvp) {
-//                selectedFragment = new TorneiosFragment();
-                Toast.makeText(this, "Em desenvolvimento", Toast.LENGTH_SHORT).show();
-
+                selectedFragment = new CriarTorneioFragment();
             }
 
             if (selectedFragment != null) {
@@ -113,21 +112,29 @@ public class MainActivity extends AppCompatActivity {
 
         builder.setView(dialogView)
                 .setPositiveButton("Adicionar", (dialog, which) -> {
-                    String nome = etNome.getText().toString();
-                    int vitorias = Integer.parseInt(etVitorias.getText().toString());
-                    int derrotas = Integer.parseInt(etDerrotas.getText().toString());
-                    int empates = Integer.parseInt(etEmpates.getText().toString());
-                    Duelista novoDuelista = new Duelista(
-                            nome,
-                            vitorias,
-                            derrotas,
-                            empates
-                    );
-                    // Adicionar no banco de dados
-                    DAOSQLITE.getInstance(this).adicionarDuelista(novoDuelista);
 
-                    // Atualizar o RankFragment
-                    atualizarListaDuelistas();
+                    try {
+                        String nome = etNome.getText().toString();
+                        int vitorias = Integer.parseInt(etVitorias.getText().toString());
+                        int derrotas = Integer.parseInt(etDerrotas.getText().toString());
+                        int empates = Integer.parseInt(etEmpates.getText().toString());
+
+                        Duelista novoDuelista = new Duelista(
+                                nome,
+                                vitorias,
+                                derrotas,
+                                empates
+                        );
+                        // Adicionar no banco de dados
+                        DAOSQLITE.getInstance(this).adicionarDuelista(novoDuelista);
+
+                        // Atualizar o RankFragment
+                        atualizarListaDuelistas();
+                    } catch (NumberFormatException e) {
+                        Toast.makeText(this, "Por favor, insira valores válidos", Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Erro ao adicionar duelista: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .setNegativeButton("Cancelar", null)
                 .show();
