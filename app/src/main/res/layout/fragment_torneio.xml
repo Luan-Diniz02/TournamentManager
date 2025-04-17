@@ -4,8 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="@color/white">
+    android:padding="16dp">
 
     <!-- Cabeçalho com título da rodada -->
     <com.google.android.material.card.MaterialCardView
@@ -24,7 +23,42 @@
             android:text="1º Rodada"
             android:layout_gravity="center"
             android:padding="12dp"/>
+
     </com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:id="@+id/tvEstadoTorneio"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Torneio em andamento"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:paddingBottom="8dp"
+        android:visibility="gone"/>
+
+
+    <LinearLayout
+        android:id="@+id/layoutNavegacaoRodadas"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingBottom="8dp"
+        android:visibility="gone">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRodadaAnterior"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Rodada Anterior"
+            android:layout_marginEnd="8dp"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnProximaRodada"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Próxima Rodada"/>
+    </LinearLayout>
 
     <!-- Lista de Duelos -->
     <androidx.recyclerview.widget.RecyclerView

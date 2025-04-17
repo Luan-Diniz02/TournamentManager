@@ -79,56 +79,6 @@ public class CriarTorneioFragment extends Fragment {
         return view;
     }
 
-    private void adicionarDuelistaHistorico() {
-        if (listaDuelista == null || listaDuelista.isEmpty()) {
-            Toast.makeText(getContext(), "Nenhum duelista no histórico", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        String[] nomes = new String[listaDuelista.size()];
-        boolean[] selecionados = new boolean[listaDuelista.size()];
-
-        for (int i = 0; i < listaDuelista.size(); i++) {
-            nomes[i] = listaDuelista.get(i).getNome();
-            selecionados[i] = false;
-        }
-
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Selecione os duelistas")
-                .setMultiChoiceItems(nomes, selecionados, (dialog, which, isChecked) -> {
-                    selecionados[which] = isChecked;
-                })
-                .setPositiveButton("Adicionar", (dialog, which) -> {
-                    int adicionados = 0;
-                    for (int i = 0; i < selecionados.length; i++) {
-                        if (selecionados[i]) {
-                            Duelista d = listaDuelista.get(i);
-
-                            // Verifica se já não foi adicionado (por ID agora, não por nome)
-                            boolean jaExiste = false;
-                            for (Duelista existente : duelistasTorneio) {
-                                if (existente.getId() == d.getId()) {
-                                    jaExiste = true;
-                                    break;
-                                }
-                            }
-
-                            if (!jaExiste) {
-                                // Adiciona o duelista diretamente (com ID existente)
-                                duelistasTorneio.add(d);
-                                adicionados++;
-                            }
-                        }
-                    }
-                    rankAdapter.notifyDataSetChanged();
-                    Toast.makeText(getContext(),
-                            adicionados + " duelistas adicionados",
-                            Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("Cancelar", null)
-                .show();
-    }
-
     private void inicializaViews(View view) {
         // Inicializando os campos
         nomeTorneio = view.findViewById(R.id.fragment_criar_nome_torneio);
@@ -183,6 +133,57 @@ public class CriarTorneioFragment extends Fragment {
         nomeDuelista.getText().clear();
     }
 
+    private void adicionarDuelistaHistorico() {
+        if (listaDuelista == null || listaDuelista.isEmpty()) {
+            Toast.makeText(getContext(), "Nenhum duelista no histórico", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] nomes = new String[listaDuelista.size()];
+        boolean[] selecionados = new boolean[listaDuelista.size()];
+
+        for (int i = 0; i < listaDuelista.size(); i++) {
+            nomes[i] = listaDuelista.get(i).getNome();
+            selecionados[i] = false;
+        }
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Selecione os duelistas")
+                .setMultiChoiceItems(nomes, selecionados, (dialog, which, isChecked) -> {
+                    selecionados[which] = isChecked;
+                })
+                .setPositiveButton("Adicionar", (dialog, which) -> {
+                    int adicionados = 0;
+                    for (int i = 0; i < selecionados.length; i++) {
+                        if (selecionados[i]) {
+                            Duelista d = new Duelista(listaDuelista.get(i).getNome());
+                            d.setId(listaDuelista.get(i).getId()); // Adiciona o ID do duelista existente
+
+                            // Verifica se já não foi adicionado (por ID agora, não por nome)
+                            boolean jaExiste = false;
+                            for (Duelista existente : duelistasTorneio) {
+                                if (existente.getId() == d.getId()) {
+                                    jaExiste = true;
+                                    break;
+                                }
+                            }
+
+                            if (!jaExiste) {
+                                // Adiciona o duelista diretamente (com ID existente)
+                                duelistasTorneio.add(d);
+                                adicionados++;
+                            }
+                        }
+                    }
+                    rankAdapter.notifyDataSetChanged();
+                    Toast.makeText(getContext(),
+                            adicionados + " duelistas adicionados",
+                            Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
     private void criarTorneio() {
         String nomeTorneioStr = nomeTorneio.getText().toString().trim();
         String rodadasStr = rodadas.getText().toString().trim();
@@ -213,6 +214,7 @@ public class CriarTorneioFragment extends Fragment {
                     topCut.isChecked()
             );
             torneio.setQuantRodadas(numRodadas);
+            torneio.setIdCampeao(0); // Garante que idCampeao seja 0 ao criar
 
             // SALVA NO BANCO DE DADOS
             long idTorneio = daosqlite.adicionarTorneio(torneio);

@@ -22,6 +22,7 @@
             android:textSize="18sp"
             android:textStyle="bold"
             android:text="Nome do Torneio"
+            android:gravity="center"
             />
 
         <!-- Linha de informações 1 -->

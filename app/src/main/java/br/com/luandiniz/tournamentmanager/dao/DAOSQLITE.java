@@ -10,7 +10,9 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import br.com.luandiniz.tournamentmanager.model.Duelista;
 import br.com.luandiniz.tournamentmanager.model.Duelo;
@@ -19,7 +21,7 @@ import br.com.luandiniz.tournamentmanager.model.Torneio;
 public class DAOSQLITE extends SQLiteOpenHelper {
 
     private static DAOSQLITE instance;
-    private static final int DATABASE_VERSION = 11;
+    private static final int DATABASE_VERSION = 12;
 
     public DAOSQLITE(Context context) {
         super(context, "torneios", null, DATABASE_VERSION);
@@ -51,7 +53,7 @@ public class DAOSQLITE extends SQLiteOpenHelper {
                 "nome TEXT NOT NULL, " +
                 "data INTEGER NOT NULL, " + // Armazena a data como timestamp
                 "rodadas INTEGER NOT NULL, " +
-                "idCampeao INTEGER, " +
+                "idCampeao INTEGER DEFAULT 0, " +
                 "topcut INTEGER NOT NULL)"; // Armazena os IDs dos duelistas como uma string separada por vírgulas
         db.execSQL(sqlTorneios);
 
@@ -80,6 +82,14 @@ public class DAOSQLITE extends SQLiteOpenHelper {
                 "FOREIGN KEY (idTorneio) REFERENCES Torneios(id) ON DELETE CASCADE, " +
                 "FOREIGN KEY (idDuelista) REFERENCES Duelistas(id) ON DELETE CASCADE)";
         db.execSQL(sqlTorneioDuelista);
+
+        String sqlTorneioByes = "CREATE TABLE TorneioByes (" +
+                "idTorneio INTEGER NOT NULL, " +
+                "idDuelista INTEGER NOT NULL, " +
+                "PRIMARY KEY (idTorneio, idDuelista), " +
+                "FOREIGN KEY (idTorneio) REFERENCES Torneios(id) ON DELETE CASCADE, " +
+                "FOREIGN KEY (idDuelista) REFERENCES Duelistas(id) ON DELETE CASCADE)";
+        db.execSQL(sqlTorneioByes);
     }
 
     @Override
@@ -89,6 +99,7 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS Rodadas");
         db.execSQL("DROP TABLE IF EXISTS Duelos");
         db.execSQL("DROP TABLE IF EXISTS TorneioDuelista");
+        db.execSQL("DROP TABLE IF EXISTS TorneioByes");
         onCreate(db);
     }
 
@@ -209,7 +220,6 @@ public class DAOSQLITE extends SQLiteOpenHelper {
             values.put("nome", torneio.getNome());
             values.put("data", torneio.getData().getTime());
             values.put("rodadas", torneio.getQuantRodadas());
-            values.put("idCampeao", torneio.getIdCampeao());
             values.put("topcut", torneio.isTopcut() ? 1 : 0);
 
             long idTorneio = db.insert("Torneios", null, values);
@@ -272,8 +282,7 @@ public class DAOSQLITE extends SQLiteOpenHelper {
                 );
                 torneio.setId(cursor.getInt(cursor.getColumnIndexOrThrow("id")));
                 torneio.setQuantRodadas(cursor.getInt(cursor.getColumnIndexOrThrow("rodadas")));
-                torneio.setIdCampeao(cursor.isNull(cursor.getColumnIndexOrThrow("idCampeao")) ?
-                        -1 : cursor.getInt(cursor.getColumnIndexOrThrow("idCampeao")));
+                torneio.setIdCampeao(cursor.getInt(cursor.getColumnIndexOrThrow("idCampeao"))); // Simplesmente usar o valor do banco
                 torneios.add(torneio);
             } while (cursor.moveToNext());
         }
@@ -488,7 +497,42 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         return duelistas;
     }
 
+    // Adicionar um bye para um duelista em um torneio
+    public void adicionarBye(int idTorneio, int idDuelista) {
+        SQLiteDatabase db = null;
+        try {
+            db = this.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put("idTorneio", idTorneio);
+            values.put("idDuelista", idDuelista);
+            db.insert("TorneioByes", null, values);
+        } finally {
+            if (db != null && db.isOpen()) {
+                db.close();
+            }
+        }
+    }
 
+    // Listar duelistas que receberam bye em um torneio
+    public Set<Integer> listarByes(int idTorneio) {
+        Set<Integer> byes = new HashSet<>();
+        SQLiteDatabase db = null;
+        Cursor cursor = null;
+        try {
+            db = this.getReadableDatabase();
+            cursor = db.rawQuery("SELECT idDuelista FROM TorneioByes WHERE idTorneio = ?",
+                    new String[]{String.valueOf(idTorneio)});
+            if (cursor.moveToFirst()) {
+                do {
+                    byes.add(cursor.getInt(cursor.getColumnIndexOrThrow("idDuelista")));
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+        return byes;
+    }
 
 
 }

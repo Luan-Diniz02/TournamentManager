@@ -19,7 +19,17 @@ public class Duelista {
         this.derrotas = 0;
         this.empates = 0;
         this.participacoes = 0;
-        this.pontos = 0;
+        this.pontos = vitorias*3 + empates + participacoes;
+    }
+
+    public Duelista(Duelista outro) {
+        this.id = outro.id;
+        this.nome = outro.nome;
+        this.pontos = outro.pontos;
+        this.vitorias = outro.vitorias;
+        this.derrotas = outro.derrotas;
+        this.empates = outro.empates;
+        // copiar outros campos conforme necessário
     }
 
     public String getNome() {

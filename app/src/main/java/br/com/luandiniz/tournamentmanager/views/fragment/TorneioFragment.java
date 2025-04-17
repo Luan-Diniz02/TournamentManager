@@ -5,6 +5,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -17,11 +18,13 @@ import com.google.android.material.button.MaterialButton;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import br.com.luandiniz.tournamentmanager.R;
 import br.com.luandiniz.tournamentmanager.adapter.DueloAdapter;
@@ -35,17 +38,24 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
     private static final String ARG_TORNEIO_ID = "torneio_id";
     private static final String KEY_RODADA_ATUAL = "rodada_atual";
     private static final String KEY_DUELOS_ATUAIS = "duelos_atuais";
+    private static final String KEY_RODADA_VISUALIZADA = "rodada_visualizada";
     private int torneioId;
     private DAOSQLITE dao;
     private Torneio torneio;
     private List<Duelista> duelistas;
     private List<Duelo> duelosAtuais;
-    private int rodadaAtual;
+    private int rodadaAtual; // Rodada atual do torneio (em andamento ou última rodada)
+    private int rodadaVisualizada; // Rodada sendo visualizada (para navegação)
     private RecyclerView rvDuelos;
     private TextView tvRodada;
-    private MaterialButton btnSalvar, btnVoltar, btnEstatisticas, btnSair;
+    private TextView tvEstadoTorneio;
+    private LinearLayout layoutNavegacaoRodadas;
+    private MaterialButton btnSalvar, btnVoltar, btnEstatisticas, btnSair, btnRodadaAnterior, btnProximaRodada;
     private DueloAdapter adapter;
     private Map<Integer, Set<Integer>> confrontosAnteriores;
+    private Set<Integer> duelistasComBye; // IDs dos duelistas que já receberam bye
+    private boolean torneioConcluido;
+    private int totalRodadas;
 
     public static TorneioFragment newInstance(int torneioId) {
         TorneioFragment fragment = new TorneioFragment();
@@ -64,6 +74,7 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
         // Restaurar estado
         if (savedInstanceState != null) {
             rodadaAtual = savedInstanceState.getInt(KEY_RODADA_ATUAL, 1);
+            rodadaVisualizada = savedInstanceState.getInt(KEY_RODADA_VISUALIZADA, 1);
             duelosAtuais = savedInstanceState.getParcelableArrayList(KEY_DUELOS_ATUAIS);
         }
     }
@@ -72,8 +83,10 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt(KEY_RODADA_ATUAL, rodadaAtual);
+        outState.putInt(KEY_RODADA_VISUALIZADA, rodadaVisualizada);
         outState.putParcelableArrayList(KEY_DUELOS_ATUAIS, new ArrayList<>(duelosAtuais));
     }
+
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -82,6 +95,10 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
         // Inicializar views
         rvDuelos = view.findViewById(R.id.rv_duelos);
         tvRodada = view.findViewById(R.id.tvRodada);
+        tvEstadoTorneio = view.findViewById(R.id.tvEstadoTorneio);
+        layoutNavegacaoRodadas = view.findViewById(R.id.layoutNavegacaoRodadas);
+        btnRodadaAnterior = view.findViewById(R.id.btnRodadaAnterior);
+        btnProximaRodada = view.findViewById(R.id.btnProximaRodada);
         btnSalvar = view.findViewById(R.id.btn_salvar);
         btnVoltar = view.findViewById(R.id.btn_voltar);
         btnEstatisticas = view.findViewById(R.id.btn_estatisticas);
@@ -107,38 +124,52 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
             return view;
         }
 
-        // Inicializar confrontos anteriores
+        // Inicializar confrontos anteriores e byes
         confrontosAnteriores = new HashMap<>();
+        duelistasComBye = dao.listarByes(torneioId); // Carregar byes do banco
         for (Duelista d : duelistas) {
             confrontosAnteriores.put(d.getId(), new HashSet<>());
         }
 
-        // Determinar rodada atual
+        // Determinar estado do torneio
         List<Integer> rodadas = dao.listarRodadas(torneioId);
+        totalRodadas = torneio.getQuantRodadas();
+
+
         if (rodadaAtual == 0) { // Só calcular se não foi restaurado
             rodadaAtual = rodadas.isEmpty() ? 1 : rodadas.size();
-        }
-        if (rodadaAtual > torneio.getQuantRodadas()) {
-            Toast.makeText(getContext(), "Torneio finalizado", Toast.LENGTH_SHORT).show();
-            btnSalvar.setEnabled(false);
-            return view;
+            if (rodadaAtual > totalRodadas && !torneioConcluido) {
+                rodadaAtual = rodadas.size();
+            }
         }
 
-        // Carregar ou restaurar duelos
-        if (duelosAtuais == null || duelosAtuais.isEmpty()) {
-            duelosAtuais = carregarOuGerarDuelos(rodadaAtual);
+        torneioConcluido = torneio.getIdCampeao() != 0 && rodadas.size() >= totalRodadas;
+
+        // Determinar rodada a ser visualizada
+        if (rodadaVisualizada == 0) {
+            rodadaVisualizada = torneioConcluido ? totalRodadas : rodadaAtual;
         }
-        adapter = new DueloAdapter(duelosAtuais, duelistas, this);
+
+        // Gerar duelos da primeira rodada se necessário
+        if (rodadas.isEmpty() && !torneioConcluido) {
+            duelosAtuais = gerarDuelosParaRodada(1);
+        } else {
+            duelosAtuais = carregarDuelosDaRodada(rodadaVisualizada);
+        }
+
+        adapter = new DueloAdapter(duelosAtuais, duelistas, this, torneioConcluido);
         rvDuelos.setAdapter(adapter);
 
-        // Atualizar texto da rodada
-        tvRodada.setText(rodadaAtual + "ª Rodada");
+        // Atualizar UI
+        atualizarInterface();
 
         // Configurar botões
         btnSalvar.setOnClickListener(v -> salvarResultados());
         btnVoltar.setOnClickListener(v -> requireActivity().getSupportFragmentManager().popBackStack());
         btnEstatisticas.setOnClickListener(v -> exibirEstatisticas());
         btnSair.setOnClickListener(v -> requireActivity().finish());
+        btnRodadaAnterior.setOnClickListener(v -> mudarRodadaVisualizada(-1));
+        btnProximaRodada.setOnClickListener(v -> mudarRodadaVisualizada(1));
 
         return view;
     }
@@ -165,46 +196,148 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
         return null;
     }
 
-    private List<Duelo> carregarOuGerarDuelos(int rodada) {
+    private List<Duelo> carregarDuelosDaRodada(int rodada) {
         List<Duelo> duelos = new ArrayList<>();
         List<Integer> rodadas = dao.listarRodadas(torneioId);
 
-        // Carregar duelos existentes
         if (rodada <= rodadas.size()) {
             duelos = dao.listarDuelosPorRodada(rodadas.get(rodada - 1), torneioId);
             Log.d("TorneioFragment", "Carregados " + duelos.size() + " duelos para rodada " + rodada);
-            // Restaurar confrontos anteriores
+            // Atualizar confrontos anteriores (se necessário)
             for (Duelo duelo : duelos) {
                 confrontosAnteriores.get(duelo.getIdDuelista1()).add(duelo.getIdDuelista2());
                 confrontosAnteriores.get(duelo.getIdDuelista2()).add(duelo.getIdDuelista1());
             }
-        } else if (rodada == 1) {
-            // Gerar duelos para a primeira rodada (aleatoriamente)
-            List<Duelista> duelistasEmbaralhados = new ArrayList<>(duelistas);
-            Collections.shuffle(duelistasEmbaralhados);
-            int idRodada = dao.adicionarRodada(torneioId, "");
-            for (int i = 0; i < duelistasEmbaralhados.size() - 1; i += 2) {
-                int idDuelista1 = duelistasEmbaralhados.get(i).getId();
-                int idDuelista2 = duelistasEmbaralhados.get(i + 1).getId();
-                if (idDuelista1 != idDuelista2) {
-                    Duelo duelo = new Duelo(idRodada, idDuelista1, idDuelista2);
-                    long dueloId = dao.adicionarDuelo(idRodada, duelo.getIdDuelista1(), duelo.getIdDuelista2(), null);
-                    duelo.setId((int) dueloId);
-                    duelos.add(duelo);
-                    // Atualizar confrontos anteriores
-                    confrontosAnteriores.get(idDuelista1).add(idDuelista2);
-                    confrontosAnteriores.get(idDuelista2).add(idDuelista1);
-                } else {
-                    Log.e("TorneioFragment", "Tentativa de emparelhar duelista com ele mesmo: " + idDuelista1);
+        } else {
+            Log.d("TorneioFragment", "Nenhum duelo carregado para a rodada " + rodada + " (ainda não gerada)");
+        }
+
+        return duelos;
+    }
+
+    private List<Duelo> gerarDuelosParaRodada(int rodada) {
+        List<Duelo> duelos = new ArrayList<>();
+        List<Integer> rodadas = dao.listarRodadas(torneioId);
+
+        if (rodada <= rodadas.size()) {
+            // Rodada já existe, apenas carregar os duelos
+            return dao.listarDuelosPorRodada(rodadas.get(rodada - 1), torneioId);
+        }
+
+        List<Duelista> duelistasOrdenados = new ArrayList<>(duelistas);
+        if (rodada == 1) {
+            Collections.shuffle(duelistasOrdenados); // Primeira rodada: embaralhar duelistas
+        } else {
+            duelistasOrdenados.sort((d1, d2) -> Integer.compare(d2.getPontos(), d1.getPontos())); // Ordenar por pontos
+        }
+
+        List<Duelista> duelistasNaoPareados = new ArrayList<>(duelistasOrdenados);
+        int idRodada = dao.adicionarRodada(torneioId, "");
+
+        // Verificar se há número ímpar de duelistas
+        if (duelistasNaoPareados.size() % 2 != 0) {
+            Duelista duelistaBye = null;
+            for (Duelista d : duelistasNaoPareados) {
+                if (!duelistasComBye.contains(d.getId())) {
+                    if (duelistaBye == null || d.getPontos() < duelistaBye.getPontos()) {
+                        duelistaBye = d;
+                    }
                 }
             }
-            dao.atualizarRodada(idRodada, duelos.toString());
+
+            if (duelistaBye != null) {
+                duelistaBye.setPontos(duelistaBye.getPontos() + 3);
+                duelistaBye.setVitorias(duelistaBye.getVitorias() + 1);
+                dao.atualizarDuelista(duelistaBye);
+                duelistasComBye.add(duelistaBye.getId());
+                dao.adicionarBye(torneioId, duelistaBye.getId());
+                duelistasNaoPareados.remove(duelistaBye);
+            } else {
+                duelistaBye = duelistasNaoPareados.get(duelistasNaoPareados.size() - 1);
+                duelistaBye.setPontos(duelistaBye.getPontos() + 3);
+                duelistaBye.setVitorias(duelistaBye.getVitorias() + 1);
+                dao.atualizarDuelista(duelistaBye);
+                duelistasComBye.clear();
+                dao.adicionarBye(torneioId, duelistaBye.getId());
+                duelistasComBye.add(duelistaBye.getId());
+                duelistasNaoPareados.remove(duelistaBye);
+            }
         }
+
+        // Gerar duelos para os duelistas restantes
+        while (duelistasNaoPareados.size() >= 2) {
+            Duelista duelista1 = duelistasNaoPareados.get(0);
+            Duelista duelista2 = null;
+
+            for (int i = 1; i < duelistasNaoPareados.size(); i++) {
+                Duelista possivelOponente = duelistasNaoPareados.get(i);
+                if (!confrontosAnteriores.get(duelista1.getId()).contains(possivelOponente.getId())) {
+                    duelista2 = possivelOponente;
+                    break;
+                }
+            }
+
+            if (duelista2 == null && !duelistasNaoPareados.isEmpty()) {
+                duelista2 = duelistasNaoPareados.get(1);
+            }
+
+            if (duelista2 != null) {
+                Duelo duelo = new Duelo(idRodada, duelista1.getId(), duelista2.getId());
+                long dueloId = dao.adicionarDuelo(idRodada, duelo.getIdDuelista1(), duelo.getIdDuelista2(), null);
+                duelo.setId((int) dueloId);
+                duelos.add(duelo);
+                confrontosAnteriores.get(duelista1.getId()).add(duelista2.getId());
+                confrontosAnteriores.get(duelista2.getId()).add(duelista1.getId());
+                duelistasNaoPareados.remove(duelista1);
+                duelistasNaoPareados.remove(duelista2);
+            } else {
+                break;
+            }
+        }
+
+        dao.atualizarRodada(idRodada, duelos.toString());
         return duelos;
+    }
+
+    private void atualizarInterface() {
+        // Atualizar texto da rodada
+        tvRodada.setText(rodadaVisualizada + "ª Rodada");
+
+        // Mostrar estado do torneio
+        if (torneioConcluido) {
+            tvEstadoTorneio.setText("Torneio Concluído");
+            tvEstadoTorneio.setVisibility(View.VISIBLE);
+            btnSalvar.setEnabled(false);
+            layoutNavegacaoRodadas.setVisibility(View.VISIBLE);
+        } else {
+            tvEstadoTorneio.setVisibility(View.GONE);
+            btnSalvar.setEnabled(rodadaVisualizada == rodadaAtual);
+            layoutNavegacaoRodadas.setVisibility(View.GONE);
+        }
+
+        // Atualizar botões de navegação
+        btnRodadaAnterior.setEnabled(rodadaVisualizada > 1);
+        btnProximaRodada.setEnabled(rodadaVisualizada < totalRodadas && rodadaVisualizada < dao.listarRodadas(torneioId).size());
+    }
+
+    private void mudarRodadaVisualizada(int direcao) {
+        int novaRodada = rodadaVisualizada + direcao;
+        if (novaRodada >= 1 && novaRodada <= totalRodadas && novaRodada <= dao.listarRodadas(torneioId).size()) {
+            rodadaVisualizada = novaRodada;
+            duelosAtuais.clear();
+            duelosAtuais.addAll(carregarDuelosDaRodada(rodadaVisualizada));
+            adapter.notifyDataSetChanged();
+            atualizarInterface();
+        }
     }
 
     @Override
     public void onResultadoSelecionado(int posicaoDuelo, String resultado) {
+        if (torneioConcluido) {
+            Toast.makeText(getContext(), "Torneio concluído, não é possível alterar resultados", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         Duelo duelo = duelosAtuais.get(posicaoDuelo);
         Duelista duelista1 = null, duelista2 = null;
         for (Duelista d : duelistas) {
@@ -224,21 +357,17 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
         switch (resultado) {
             case "VITORIA_A":
                 duelista1.setVitorias(duelista1.getVitorias() + 1);
-                duelista1.setPontos(duelista1.getPontos() + 3);
                 duelista2.setDerrotas(duelista2.getDerrotas() + 1);
                 duelo.setIdVencedor(duelista1.getId());
                 break;
             case "VITORIA_B":
                 duelista2.setVitorias(duelista2.getVitorias() + 1);
-                duelista2.setPontos(duelista2.getPontos() + 3);
                 duelista1.setDerrotas(duelista1.getDerrotas() + 1);
                 duelo.setIdVencedor(duelista2.getId());
                 break;
             case "EMPATE":
                 duelista1.setEmpates(duelista1.getEmpates() + 1);
-                duelista1.setPontos(duelista1.getPontos() + 1);
                 duelista2.setEmpates(duelista2.getEmpates() + 1);
-                duelista2.setPontos(duelista2.getPontos() + 1);
                 duelo.setIdVencedor(null);
                 break;
         }
@@ -248,6 +377,12 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
     }
 
     private void salvarResultados() {
+        // Verificar se o torneio está concluído
+        if (torneioConcluido) {
+            Toast.makeText(getContext(), "Torneio já concluído, não é possível salvar novos resultados", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         // Verificar se todos os duelos têm resultado
         for (Duelo duelo : duelosAtuais) {
             if (duelo.getIdDuelista1() == 0 || duelo.getIdDuelista2() == 0) {
@@ -257,20 +392,27 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
         }
 
         // Atualizar duelistas no banco
-        for (Duelista duelista : duelistas) {
-            dao.atualizarDuelista(duelista);
+        for (Duelista duelistaLocal : duelistas) {
+            dao.atualizarDuelista(duelistaLocal);
         }
 
         // Avançar para a próxima rodada
         rodadaAtual++;
         if (rodadaAtual > torneio.getQuantRodadas()) {
+
+            for (Duelista duelista : duelistas) {
+                duelista.setParticipacao(duelista.getParticipacao() + 1); // Adiciona 1 ponto de participação
+                dao.atualizarDuelista(duelista);
+            }
             // Finalizar torneio e exibir classificação
             Duelista campeao = determinarCampeao();
+
             if (campeao != null) {
                 torneio.setIdCampeao(campeao.getId());
                 dao.atualizarTorneio(torneio);
                 Toast.makeText(getContext(), "Torneio finalizado! Campeão: " + campeao.getNome(), Toast.LENGTH_LONG).show();
             }
+            torneioConcluido = true;
             btnSalvar.setEnabled(false);
 
             // Navegar para o ClassificacaoFragment
@@ -283,55 +425,12 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
             return;
         }
 
-        // Gerar duelos para a próxima rodada usando o sistema suíço
+        // Gerar duelos para a próxima rodada
         duelosAtuais.clear();
-        List<Duelista> duelistasOrdenados = new ArrayList<>(duelistas);
-        duelistasOrdenados.sort((d1, d2) -> Integer.compare(d2.getPontos(), d1.getPontos())); // Ordenar por pontos (descendente)
-
-        List<Duelista> duelistasNaoPareados = new ArrayList<>(duelistasOrdenados);
-        List<Duelo> novosDuelos = new ArrayList<>();
-        int idRodada = dao.adicionarRodada(torneioId, "");
-
-        while (duelistasNaoPareados.size() >= 2) {
-            Duelista duelista1 = duelistasNaoPareados.get(0);
-            Duelista duelista2 = null;
-
-            // Encontrar um oponente com pontuação próxima e que ainda não foi enfrentado
-            for (int i = 1; i < duelistasNaoPareados.size(); i++) {
-                Duelista possivelOponente = duelistasNaoPareados.get(i);
-                if (!confrontosAnteriores.get(duelista1.getId()).contains(possivelOponente.getId())) {
-                    duelista2 = possivelOponente;
-                    break;
-                }
-            }
-
-            if (duelista2 == null && !duelistasNaoPareados.isEmpty()) {
-                // Se não houver oponente não enfrentado, pegar o próximo disponível (pode ser ajustado para bye)
-                duelista2 = duelistasNaoPareados.get(1);
-            }
-
-            if (duelista2 != null) {
-                Duelo duelo = new Duelo(idRodada, duelista1.getId(), duelista2.getId());
-                long dueloId = dao.adicionarDuelo(idRodada, duelo.getIdDuelista1(), duelo.getIdDuelista2(), null);
-                duelo.setId((int) dueloId);
-                novosDuelos.add(duelo);
-                // Atualizar confrontos anteriores
-                confrontosAnteriores.get(duelista1.getId()).add(duelista2.getId());
-                confrontosAnteriores.get(duelista2.getId()).add(duelista1.getId());
-                // Remover os duelistas pareados
-                duelistasNaoPareados.remove(duelista1);
-                duelistasNaoPareados.remove(duelista2);
-            } else {
-                break; // Não há mais oponentes disponíveis
-            }
-        }
-
-        duelosAtuais.addAll(novosDuelos);
-        dao.atualizarRodada(idRodada, duelosAtuais.toString());
-
-        // Atualizar UI
+        duelosAtuais.addAll(gerarDuelosParaRodada(rodadaAtual));
+        rodadaVisualizada = rodadaAtual;
         adapter.notifyDataSetChanged();
-        tvRodada.setText(rodadaAtual + "ª Rodada");
+        atualizarInterface();
         Toast.makeText(getContext(), "Resultados salvos! Avançando para a próxima rodada", Toast.LENGTH_SHORT).show();
     }
 
@@ -345,14 +444,95 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
     }
 
     private Duelista determinarCampeao() {
-        Duelista campeao = null;
-        int maxPontos = -1;
+        // 1. Criar uma cópia imutável de todos os duelistas com seus dados atuais
+        List<Duelista> copiaDuelistas = new ArrayList<>();
+        for (Duelista original : duelistas) {
+            copiaDuelistas.add(new Duelista(original)); // Assume que Duelista tem construtor de cópia
+        }
+
+        // 2. Processar os critérios usando apenas a cópia
+        // Primeiro critério: Pontuação
+        int maxPontos = Collections.max(copiaDuelistas, Comparator.comparingInt(Duelista::getPontos)).getPontos();
+        List<Duelista> candidatos = copiaDuelistas.stream()
+                .filter(d -> d.getPontos() == maxPontos)
+                .collect(Collectors.toList());
+
+        if (candidatos.size() == 1) {
+            return encontrarOriginal(candidatos.get(0).getId());
+        }
+
+        // Segundo critério: Vitórias
+        int maxVitorias = Collections.max(candidatos, Comparator.comparingInt(Duelista::getVitorias)).getVitorias();
+        List<Duelista> candidatosVitorias = candidatos.stream()
+                .filter(d -> d.getVitorias() == maxVitorias)
+                .collect(Collectors.toList());
+
+        if (candidatosVitorias.size() == 1) {
+            return encontrarOriginal(candidatosVitorias.get(0).getId());
+        }
+
+        // Terceiro critério: Empates
+        int maxEmpates = Collections.max(candidatosVitorias, Comparator.comparingInt(Duelista::getEmpates)).getEmpates();
+        List<Duelista> candidatosEmpates = candidatosVitorias.stream()
+                .filter(d -> d.getEmpates() == maxEmpates)
+                .collect(Collectors.toList());
+
+        if (candidatosEmpates.size() == 1) {
+            return encontrarOriginal(candidatosEmpates.get(0).getId());
+        }
+
+        // Quarto critério: Buchholz
+        Map<Duelista, Integer> buchholzMap = new HashMap<>();
+        for (Duelista d : candidatosEmpates) {
+            buchholzMap.put(d, calcularBuchholz(d));
+        }
+
+        int maxBuchholz = Collections.max(buchholzMap.values());
+        List<Duelista> campeoes = buchholzMap.entrySet().stream()
+                .filter(entry -> entry.getValue() == maxBuchholz)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        return encontrarOriginal(campeoes.get(0).getId());
+    }
+
+    private Duelista encontrarOriginal(int id) {
         for (Duelista d : duelistas) {
-            if (d.getPontos() > maxPontos) {
-                maxPontos = d.getPontos();
-                campeao = d;
+            if (d.getId() == id) {
+                return d;
             }
         }
-        return campeao;
+        return null;
+    }
+
+    private int calcularBuchholz(Duelista duelista) {
+        // Criar cópia local dos duelistas para evitar concorrência
+        Map<Integer, Integer> pontosOponentes = new HashMap<>();
+        for (Duelista d : duelistas) {
+            pontosOponentes.put(d.getId(), d.getPontos());
+        }
+
+        int pontuacaoOponentes = 0;
+        List<Integer> rodadas = dao.listarRodadas(torneioId);
+
+        for (Integer idRodada : rodadas) {
+            List<Duelo> duelos = dao.listarDuelosPorRodada(idRodada, torneioId);
+            for (Duelo duelo : duelos) {
+                int idOponente = -1;
+                if (duelo.getIdDuelista1() == duelista.getId()) {
+                    idOponente = duelo.getIdDuelista2();
+                } else if (duelo.getIdDuelista2() == duelista.getId()) {
+                    idOponente = duelo.getIdDuelista1();
+                }
+
+                if (idOponente != -1) {
+                    Integer pontos = pontosOponentes.get(idOponente);
+                    if (pontos != null) {
+                        pontuacaoOponentes += pontos;
+                    }
+                }
+            }
+        }
+        return pontuacaoOponentes;
     }
 }
