@@ -21,7 +21,7 @@ import br.com.luandiniz.tournamentmanager.model.Torneio;
 public class DAOSQLITE extends SQLiteOpenHelper {
 
     private static DAOSQLITE instance;
-    private static final int DATABASE_VERSION = 12;
+    private static final int DATABASE_VERSION = 13; // Incrementado para forçar onUpgrade
 
     public DAOSQLITE(Context context) {
         super(context, "torneios", null, DATABASE_VERSION);
@@ -44,23 +44,24 @@ public class DAOSQLITE extends SQLiteOpenHelper {
                 "vitorias INTEGER NOT NULL, " +
                 "derrotas INTEGER NOT NULL, " +
                 "empates INTEGER NOT NULL, " +
-                "participacoes INTEGER NOT NULL, " + // Novo campo
+                "participacoes INTEGER NOT NULL, " +
                 "pontos INTEGER NOT NULL)";
         db.execSQL(sqlDuelistas);
 
         String sqlTorneios = "CREATE TABLE Torneios (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "nome TEXT NOT NULL, " +
-                "data INTEGER NOT NULL, " + // Armazena a data como timestamp
+                "data INTEGER NOT NULL, " +
                 "rodadas INTEGER NOT NULL, " +
                 "idCampeao INTEGER DEFAULT 0, " +
-                "topcut INTEGER NOT NULL)"; // Armazena os IDs dos duelistas como uma string separada por vírgulas
+                "topcut INTEGER NOT NULL)";
         db.execSQL(sqlTorneios);
 
         String sqlRodadas = "CREATE TABLE Rodadas (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "idTorneio INTEGER NOT NULL, " +
-                "duelos TEXT NOT NULL, " + // Armazena os duelos como uma string
+                "duelos TEXT NOT NULL, " +
+                "fase TEXT, " + // Nova coluna para armazenar a fase (Semi-final, Final, etc.)
                 "FOREIGN KEY (idTorneio) REFERENCES Torneios(id))";
         db.execSQL(sqlRodadas);
 
@@ -70,6 +71,7 @@ public class DAOSQLITE extends SQLiteOpenHelper {
                 "duelista1 INTEGER NOT NULL, " +
                 "duelista2 INTEGER NOT NULL, " +
                 "vencedor INTEGER, " +
+                "empate BOOL, " +
                 "FOREIGN KEY (idRodada) REFERENCES Rodadas(id), " +
                 "FOREIGN KEY (duelista1) REFERENCES Duelistas(id), " +
                 "FOREIGN KEY (duelista2) REFERENCES Duelistas(id))";
@@ -140,7 +142,7 @@ public class DAOSQLITE extends SQLiteOpenHelper {
             values.put("participacoes", duelista.getParticipacao());
             values.put("pontos", duelista.getPontos());
             long id = db.insert("Duelistas", null, values);
-            return id; // Retorna o ID gerado
+            return id;
         } finally {
             if (db != null && db.isOpen()) {
                 db.close();
@@ -148,7 +150,6 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         }
     }
 
-    // Atualizar duelista
     public void atualizarDuelista(Duelista duelista) {
         SQLiteDatabase db = null;
         try {
@@ -207,7 +208,7 @@ public class DAOSQLITE extends SQLiteOpenHelper {
                 db.close();
             }
         }
-        return null; // Retorna null se o duelista não for encontrado
+        return null;
     }
 
     public long adicionarTorneio(Torneio torneio) {
@@ -248,7 +249,6 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         }
     }
 
-    // Atualizar torneio
     public void atualizarTorneio(Torneio torneio) {
         SQLiteDatabase db = null;
         try {
@@ -282,7 +282,7 @@ public class DAOSQLITE extends SQLiteOpenHelper {
                 );
                 torneio.setId(cursor.getInt(cursor.getColumnIndexOrThrow("id")));
                 torneio.setQuantRodadas(cursor.getInt(cursor.getColumnIndexOrThrow("rodadas")));
-                torneio.setIdCampeao(cursor.getInt(cursor.getColumnIndexOrThrow("idCampeao"))); // Simplesmente usar o valor do banco
+                torneio.setIdCampeao(cursor.getInt(cursor.getColumnIndexOrThrow("idCampeao")));
                 torneios.add(torneio);
             } while (cursor.moveToNext());
         }
@@ -307,14 +307,14 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         }
     }
 
-    // Adicionar uma rodada
-    public int adicionarRodada(int idTorneio, String duelos) {
+    public int adicionarRodada(int idTorneio, String duelos, String fase) {
         SQLiteDatabase db = null;
         try {
             db = this.getWritableDatabase();
             ContentValues values = new ContentValues();
             values.put("idTorneio", idTorneio);
             values.put("duelos", duelos);
+            values.put("fase", fase); // Salvar a fase da rodada
             long idRodada = db.insert("Rodadas", null, values);
             return (int) idRodada;
         } finally {
@@ -324,13 +324,13 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         }
     }
 
-    // Atualizar uma rodada
-    public void atualizarRodada(int idRodada, String duelos) {
+    public void atualizarRodada(int idRodada, String duelos, String fase) {
         SQLiteDatabase db = null;
         try {
             db = this.getWritableDatabase();
             ContentValues values = new ContentValues();
             values.put("duelos", duelos);
+            values.put("fase", fase); // Atualizar a fase, se fornecida
             db.update("Rodadas", values, "id = ?", new String[]{String.valueOf(idRodada)});
         } finally {
             if (db != null && db.isOpen()) {
@@ -339,7 +339,6 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         }
     }
 
-    // Listar IDs de rodadas
     public List<Integer> listarRodadas(int idTorneio) {
         List<Integer> rodadas = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
@@ -354,7 +353,6 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         return rodadas;
     }
 
-    // Listar duelos por rodada
     public List<Duelo> listarDuelosPorRodada(int idRodada, int idTorneio) {
         List<Duelo> duelos = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
@@ -370,6 +368,7 @@ public class DAOSQLITE extends SQLiteOpenHelper {
                 if (!cursor.isNull(cursor.getColumnIndexOrThrow("vencedor"))) {
                     duelo.setIdVencedor(cursor.getInt(cursor.getColumnIndexOrThrow("vencedor")));
                 }
+                duelo.setEmpate(cursor.getInt(cursor.getColumnIndexOrThrow("empate")) == 1); // Carregar o campo empate
                 duelos.add(duelo);
             } while (cursor.moveToNext());
         }
@@ -378,7 +377,6 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         return duelos;
     }
 
-    // Adicionar duelo
     public long adicionarDuelo(int idRodada, int duelista1, int duelista2, Integer vencedor) {
         SQLiteDatabase db = null;
         try {
@@ -388,6 +386,7 @@ public class DAOSQLITE extends SQLiteOpenHelper {
             values.put("duelista1", duelista1);
             values.put("duelista2", duelista2);
             values.put("vencedor", vencedor);
+            values.put("empate", 0); // Definir empate como falso por padrão
             return db.insert("Duelos", null, values);
         } finally {
             if (db != null && db.isOpen()) {
@@ -396,13 +395,13 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         }
     }
 
-    // Atualizar duelo
-    public void atualizarDuelo(int idDuelo, Integer idVencedor) {
+    public void atualizarDuelo(int idDuelo, Integer idVencedor, boolean isEmpate) {
         SQLiteDatabase db = null;
         try {
             db = this.getWritableDatabase();
             ContentValues values = new ContentValues();
             values.put("vencedor", idVencedor);
+            values.put("empate", isEmpate ? 1 : 0); // Atualizar o campo empate
             db.update("Duelos", values, "id = ?", new String[]{String.valueOf(idDuelo)});
         } finally {
             if (db != null && db.isOpen()) {
@@ -411,7 +410,6 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         }
     }
 
-    // Listar duelos de uma rodada
     public List<String> listarDuelos(int idRodada) {
         List<String> duelos = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
@@ -422,7 +420,8 @@ public class DAOSQLITE extends SQLiteOpenHelper {
                 int duelista1 = cursor.getInt(cursor.getColumnIndexOrThrow("duelista1"));
                 int duelista2 = cursor.getInt(cursor.getColumnIndexOrThrow("duelista2"));
                 Integer vencedor = cursor.isNull(cursor.getColumnIndexOrThrow("vencedor")) ? null : cursor.getInt(cursor.getColumnIndexOrThrow("vencedor"));
-                duelos.add("Duelista 1: " + duelista1 + ", Duelista 2: " + duelista2 + ", Vencedor: " + (vencedor != null ? vencedor : "N/A"));
+                boolean empate = cursor.getInt(cursor.getColumnIndexOrThrow("empate")) == 1;
+                duelos.add("Duelista 1: " + duelista1 + ", Duelista 2: " + duelista2 + ", Vencedor: " + (vencedor != null ? vencedor : empate ? "Empate" : "N/A"));
             } while (cursor.moveToNext());
         }
 
@@ -431,7 +430,6 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         return duelos;
     }
 
-    // Adiciona um duelista a um torneio
     public void adicionarDuelistaAoTorneio(int idTorneio, int idDuelista) {
         SQLiteDatabase db = null;
         try {
@@ -447,7 +445,6 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         }
     }
 
-    // Remove um duelista de um torneio
     public boolean removerDuelistaDeTorneio(int idTorneio, int idDuelista) {
         SQLiteDatabase db = null;
         try {
@@ -463,7 +460,6 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         }
     }
 
-    // Lista todos os duelistas de um torneio
     public List<Duelista> listarDuelistasDoTorneio(int idTorneio) {
         List<Duelista> duelistas = new ArrayList<>();
         SQLiteDatabase db = null;
@@ -497,7 +493,6 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         return duelistas;
     }
 
-    // Adicionar um bye para um duelista em um torneio
     public void adicionarBye(int idTorneio, int idDuelista) {
         SQLiteDatabase db = null;
         try {
@@ -513,7 +508,6 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         }
     }
 
-    // Listar duelistas que receberam bye em um torneio
     public Set<Integer> listarByes(int idTorneio) {
         Set<Integer> byes = new HashSet<>();
         SQLiteDatabase db = null;
@@ -534,5 +528,20 @@ public class DAOSQLITE extends SQLiteOpenHelper {
         return byes;
     }
 
-
+    public String getFaseRodada(int idRodada) {
+        SQLiteDatabase db = null;
+        Cursor cursor = null;
+        try {
+            db = this.getReadableDatabase();
+            cursor = db.rawQuery("SELECT fase FROM Rodadas WHERE id = ?", new String[]{String.valueOf(idRodada)});
+            if (cursor.moveToFirst()) {
+                String fase = cursor.getString(cursor.getColumnIndexOrThrow("fase"));
+                return fase != null ? fase : ""; // Retorna vazio se fase for nula
+            }
+            return "";
+        } finally {
+            if (cursor != null) cursor.close();
+            if (db != null && db.isOpen()) db.close();
+        }
+    }
 }
