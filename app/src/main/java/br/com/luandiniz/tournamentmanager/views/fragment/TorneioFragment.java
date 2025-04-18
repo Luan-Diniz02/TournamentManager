@@ -141,7 +141,7 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
             rodadaAtual = rodadas.isEmpty() ? 1 : Math.min(rodadas.size(), totalRodadas);
         }
         if (rodadaVisualizada == 0) {
-            rodadaVisualizada = torneioConcluido ? totalRodadas : rodadaAtual;
+            rodadaVisualizada = torneioConcluido ? 1 : rodadaAtual;
         }
     }
 
@@ -251,9 +251,8 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
         List<Duelo> duelos = new ArrayList<>();
         List<Integer> rodadas = dao.listarRodadas(torneioId);
 
-        if (rodada <= rodadas.size() && rodada <= totalRodadas) {
+        if (rodada <= rodadas.size()) {
             duelos = dao.listarDuelosPorRodada(rodadas.get(rodada - 1), torneioId);
-            Toast.makeText(getContext(), "Carregando duelos da rodada " + rodada, Toast.LENGTH_SHORT).show();
             for (Duelo duelo : duelos) {
                 confrontosAnteriores.get(duelo.getIdDuelista1()).add(duelo.getIdDuelista2());
                 confrontosAnteriores.get(duelo.getIdDuelista2()).add(duelo.getIdDuelista1());
@@ -356,21 +355,32 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
 
     private void atualizarInterface() {
 
-        if (faseTopCut == FASE_SEMI_FINAL) {
-            tvRodada.setText("Semi-finais");
-        } else if (faseTopCut == FASE_FINAL) {
-            tvRodada.setText("Final");
-        } else {
-            tvRodada.setText(rodadaVisualizada + "ª Rodada");
-        }
-
         if (torneioConcluido) {
+            if (rodadaVisualizada == totalRodadas + 1) {
+                tvRodada.setText("Semi-finais");
+            } else if (rodadaVisualizada == totalRodadas + 2) {
+                tvRodada.setText("Final");
+            } else {
+                tvRodada.setText(rodadaVisualizada + "ª Rodada");
+            }
+
             tvEstadoTorneio.setText("Torneio Concluído");
             tvEstadoTorneio.setVisibility(View.VISIBLE);
             btnSalvar.setEnabled(false);
             layoutNavegacaoRodadas.setVisibility(View.VISIBLE);
+
         } else {
-            tvEstadoTorneio.setVisibility(View.GONE);
+
+            if (faseTopCut == FASE_SEMI_FINAL) {
+                tvRodada.setText("Semi-finais");
+            } else if (faseTopCut == FASE_FINAL) {
+                tvRodada.setText("Final");
+            } else {
+                tvRodada.setText(rodadaVisualizada + "ª Rodada");
+            }
+
+            tvEstadoTorneio.setText("Torneio em Andamento");
+            tvEstadoTorneio.setVisibility(View.VISIBLE);
             btnSalvar.setEnabled(true);
             layoutNavegacaoRodadas.setVisibility(View.GONE);
         }
@@ -380,17 +390,15 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
     }
 
     private void mudarRodadaVisualizada(int direcao) {
-        if (faseTopCut != FASE_NORMAL) {
-            return;
-        }
+
         int novaRodada = rodadaVisualizada + direcao;
-        if (novaRodada >= 1 && novaRodada <= totalRodadas && novaRodada <= dao.listarRodadas(torneioId).size()) {
+        if (novaRodada >= 1 && novaRodada <= dao.listarRodadas(torneioId).size()) {
             rodadaVisualizada = novaRodada;
             duelosAtuais.clear();
             duelosAtuais.addAll(carregarDuelosDaRodada(rodadaVisualizada));
-            adapter.notifyDataSetChanged();
-            atualizarInterface();
         }
+        adapter.notifyDataSetChanged();
+        atualizarInterface();
     }
 
     @Override
@@ -483,7 +491,7 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
                 dao.atualizarDuelista(duelista);
             }
 
-            if (duelistas.size() >= TOP_CUT_SIZE) {
+            if (duelistas.size() >= TOP_CUT_SIZE && torneio.isTopcut()) {
                 iniciarTopCut();
             } else {
                 finalizarTorneio();
