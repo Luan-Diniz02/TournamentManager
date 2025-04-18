@@ -14,6 +14,9 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.leinardi.android.speeddial.SpeedDialActionItem;
+import com.leinardi.android.speeddial.SpeedDialView;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -28,26 +31,19 @@ public class RankFragment extends Fragment {
     private RankAdapter rankAdapter;
     private DAOSQLITE daosqlite;
     private List<Duelista> duelistas;
+    private SpeedDialView speedDialView;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_rank, container, false);
 
-        // Inicializa RecyclerView
-        recyclerView = view.findViewById(R.id.recycler_view_duelistas);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-
-        // Inicializa DAO e carrega dados
-        daosqlite = DAOSQLITE.getInstance(requireContext());
+        // Inicializa o DAO
         carregarDuelistas();
 
-        // Configura o adapter
-        rankAdapter = new RankAdapter(duelistas, getContext());
-        rankAdapter.setOnItemClickListener((duelista, position) -> {
-            abrirOpcoesDuelista(duelista, position);
-        });
-        recyclerView.setAdapter(rankAdapter);
+        inicializaView(view);
+
+        inicializaListener();
 
         // Configura o ItemTouchHelper para swipe
         setupItemTouchHelper();
@@ -55,7 +51,114 @@ public class RankFragment extends Fragment {
         return view;
     }
 
+    private void inicializaListener() {
+        speedDialView.setOnActionSelectedListener(actionItem -> {
+            if (actionItem.getId() == R.id.menu_acao1) {
+                dialogAdicionarDuelista();
+            }
+            else if (actionItem.getId() == R.id.menu_acao2) {
+                // Verifica se a lista de duelistas está vazia
+                if(duelistas.isEmpty() || duelistas.size() == 0) {
+                    Toast.makeText(getContext(), "Não há duelistas para remover", Toast.LENGTH_SHORT).show();
+                }
+                else{
+                    // Limpar o rank
+                    new AlertDialog.Builder(getContext())
+                            .setTitle("Limpar Rank")
+                            .setMessage("Tem certeza que deseja limpar o rank?")
+                            .setPositiveButton("Sim", (dialog, which) -> {
+                                for(Duelista duelista : duelistas) {
+                                    daosqlite.removerDuelista(duelista.getId());
+                                }
+                                carregarDuelistas();
+                                Toast.makeText(getContext(), "Rank resetado", Toast.LENGTH_SHORT).show();
+                            })
+                            .setNegativeButton("Cancelar", null)
+                            .show();
+                }
+            }
+            return false; // Fecha o SpeedDial após a ação
+        });
+    }
+
+    private void inicializaView(View view) {
+        // Inicializa RecyclerView
+        recyclerView = view.findViewById(R.id.recycler_view_duelistas);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        // Inicializa SpeedDialView
+        speedDialView = view.findViewById(R.id.rank_fragment_speeddial_menu);
+
+        speedDialView.setMainFabClosedDrawable(getResources().getDrawable(R.drawable.ic_barra));
+        speedDialView.addActionItem(new SpeedDialActionItem.Builder(R.id.menu_acao1, R.drawable.ic_add)
+                .setLabel("Adicionar")
+                .setFabBackgroundColor(getResources().getColor(R.color.white))
+                .create());
+        speedDialView.addActionItem(new SpeedDialActionItem.Builder(R.id.menu_acao2, R.drawable.ic_remove)
+                .setLabel("Limpar Rank")
+                .setFabBackgroundColor(getResources().getColor(R.color.white))
+                .create());
+
+        // Configura o adapter
+        rankAdapter = new RankAdapter(duelistas, getContext());
+        rankAdapter.setOnItemClickListener((duelista, position) -> {
+            abrirOpcoesDuelista(duelista, position);
+        });
+        recyclerView.setAdapter(rankAdapter);
+    }
+
+    private void dialogAdicionarDuelista() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Adicionar Duelista");
+
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.activity_add_duelista, null);
+
+        EditText etNome = dialogView.findViewById(R.id.activity_add_duelista_nome);
+        EditText etVitorias = dialogView.findViewById(R.id.activity_add_duelista_vitorias);
+        EditText etDerrotas = dialogView.findViewById(R.id.activity_add_duelista_derrotas);
+        EditText etEmpates = dialogView.findViewById(R.id.activity_add_duelista_empates);
+
+        builder.setView(dialogView)
+                .setPositiveButton("Adicionar", (dialog, which) -> {
+
+                    try {
+                        String nome = etNome.getText().toString();
+                        int vitorias = Integer.parseInt(etVitorias.getText().toString());
+                        int derrotas = Integer.parseInt(etDerrotas.getText().toString());
+                        int empates = Integer.parseInt(etEmpates.getText().toString());
+
+                        Duelista novoDuelista = new Duelista(
+                                nome,
+                                vitorias,
+                                derrotas,
+                                empates
+                        );
+                        // Adicionar no banco de dados
+                        DAOSQLITE.getInstance(getContext()).adicionarDuelista(novoDuelista);
+
+                        // Atualizar o RankFragment
+                        atualizarListaDuelistas();
+                    } catch (NumberFormatException e) {
+                        Toast.makeText(getContext(), "Por favor, insira valores válidos", Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Toast.makeText(getContext(), "Erro ao adicionar duelista: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void atualizarListaDuelistas() {
+        Fragment currentFragment = getParentFragmentManager().findFragmentById(R.id.container);
+        if (currentFragment instanceof RankFragment) {
+            ((RankFragment) currentFragment).carregarDuelistas();
+        }
+    }
+
     public void carregarDuelistas() {
+        // Inicializa DAO e carrega dados
+        daosqlite = DAOSQLITE.getInstance(requireContext());
+
         duelistas = daosqlite.listarDuelistas();
         if (duelistas == null) {
             duelistas = Collections.emptyList();
@@ -77,7 +180,7 @@ public class RankFragment extends Fragment {
         });
     }
 
-    private void abrirDialogEdicao(Duelista duelista, int position) {
+    private void dialogEdicao(Duelista duelista, int position) {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setTitle("Editar Duelista");
 
@@ -179,10 +282,10 @@ public class RankFragment extends Fragment {
                 .setItems(opcoes, (dialog, which) -> {
                     switch (which) {
                         case 0: // Adicionar Pontos
-                            abrirDialogAdicionarPontos(duelista, position);
+                            dialogAdicionarPontos(duelista, position);
                             break;
                         case 1: // Editar Dados
-                            abrirDialogEdicao(duelista, position);
+                            dialogEdicao(duelista, position);
                             break;
                         case 2: // Cancelar
                             dialog.dismiss();
@@ -192,7 +295,7 @@ public class RankFragment extends Fragment {
                 .show();
     }
 
-    private void abrirDialogAdicionarPontos(Duelista duelista, int position) {
+    private void dialogAdicionarPontos(Duelista duelista, int position) {
             AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
             builder.setTitle("Adicionar Pontos para " + duelista.getNome());
 

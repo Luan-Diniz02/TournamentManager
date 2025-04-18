@@ -28,28 +28,30 @@ public class HistoricoFragment extends Fragment implements HistoricoTorneioAdapt
     private TextView tvEmptyView;
     private HistoricoTorneioAdapter adapter;
     private DAOSQLITE dao;
+    private List<Torneio> torneios;
+    private List <Duelista> duelistas;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_historico, container, false);
 
+        carregarHistorico();
+
+        inicializaView(view);
+
+        return view;
+    }
+
+    private void inicializaView(View view) {
+        // Inicializar RecyclerView e TextView
         recyclerView = view.findViewById(R.id.rv_historico_torneios);
         tvEmptyView = view.findViewById(R.id.tv_empty_view);
 
         // Configurar RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // Obter dados do banco
-        dao = DAOSQLITE.getInstance(requireContext());
-        List<Torneio> torneios = dao.listarTorneios();
-        List<Duelista> duelistas = dao.listarDuelistas();
-
-        Log.d("HistoricoFragment", "Torneios carregados: " + torneios.size());
-        for (Torneio t : torneios) {
-            Log.d("HistoricoFragment", "Torneio: " + t.getNome() + ", Duelistas: " + t.getDuelistas().size());
-        }
-
+        // Configurar Adapter
         adapter = new HistoricoTorneioAdapter(torneios, duelistas, this);
         adapter.setOnTorneioClickListener(torneio -> {
             TorneioFragment fragment = TorneioFragment.newInstance(torneio.getId());
@@ -69,8 +71,13 @@ public class HistoricoFragment extends Fragment implements HistoricoTorneioAdapt
             recyclerView.setVisibility(View.VISIBLE);
             tvEmptyView.setVisibility(View.GONE);
         }
+    }
 
-        return view;
+    private void carregarHistorico() {
+        // Obter dados do banco
+        dao = DAOSQLITE.getInstance(requireContext());
+        torneios = dao.listarTorneios();
+        duelistas = dao.listarDuelistas();
     }
 
     @Override

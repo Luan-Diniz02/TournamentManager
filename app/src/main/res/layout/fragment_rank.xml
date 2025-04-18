@@ -103,6 +103,14 @@
         </TableRow>
     </TableLayout>
 
+    <com.leinardi.android.speeddial.SpeedDialView
+        android:id="@+id/rank_fragment_speeddial_menu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginBottom="100dp" />
+
     <!-- RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view_duelistas"

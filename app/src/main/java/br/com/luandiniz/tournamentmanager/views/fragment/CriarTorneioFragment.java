@@ -34,34 +34,33 @@ public class CriarTorneioFragment extends Fragment {
     private List<Duelista> duelistasTorneio;
     private List<Duelista> listaDuelista;
     private DAOSQLITE daosqlite;
+    private RecyclerView recyclerView;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_criar_torneio, container, false);
 
-        // No seu CriarTorneioFragment.java
-        RecyclerView recyclerView = view.findViewById(R.id.fragment_criar_recycler_duelistas);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        carregaListaDuelista();
 
+        inicializaViews(view);
+
+        inicializaListener();
+
+        return view;
+    }
+
+    private void carregaListaDuelista() {
         // Inicializando o DAO
         daosqlite = DAOSQLITE.getInstance(requireContext());
         listaDuelista = daosqlite.listarDuelistas();
+    }
 
-        // Reaproveitando o adapter existente
-        duelistasTorneio = new ArrayList<>(); // Lista vazia inicial
-        rankAdapter = new RankAdapter(duelistasTorneio, getContext());
-
-        // Configurando listeners se necessário
+    private void inicializaListener() {
         rankAdapter.setOnItemClickListener((duelista, position) -> {
             // Lógica quando clicar em um duelista
-        });
 
-        rankAdapter.setOnItemLongClickListener((duelista, position) -> {
-            // Lógica quando pressionar longo em um duelista
         });
-
-        inicializaViews(view);
 
         addDuelista.setOnClickListener(v -> {
             adicionarDuelista();
@@ -74,13 +73,11 @@ public class CriarTorneioFragment extends Fragment {
         criarTorneio.setOnClickListener(v -> {
             criarTorneio();
         });
-
-        recyclerView.setAdapter(rankAdapter);
-        return view;
     }
 
     private void inicializaViews(View view) {
         // Inicializando os campos
+        recyclerView = view.findViewById(R.id.fragment_criar_recycler_duelistas);
         nomeTorneio = view.findViewById(R.id.fragment_criar_nome_torneio);
         nomeDuelista = view.findViewById(R.id.fragment_criar_nome_duelista);
         addDuelista = view.findViewById(R.id.fragment_criar_btn_add_duelista);
@@ -88,6 +85,13 @@ public class CriarTorneioFragment extends Fragment {
         addDuelistaHistorico = view.findViewById(R.id.fragment_criar_btn_add_duelista_historico);
         rodadas = view.findViewById(R.id.fragment_criar_rodadas);
         topCut = view.findViewById(R.id.fragment_criar_check_top_cut);
+
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        // Inicializando o adapter
+        duelistasTorneio = new ArrayList<>();
+        rankAdapter = new RankAdapter(duelistasTorneio, getContext());
+        recyclerView.setAdapter(rankAdapter);
     }
 
     private void adicionarDuelista() {
