@@ -99,7 +99,7 @@ public class Duelo implements Parcelable {
         this.empate = empate;
     }
 
-    public boolean temResultadoDefinido() {
+    public boolean resultadoDefinido() {
         // Considera que o resultado está definido se:
         // 1. Tem um vencedor OU
         // 2. Foi marcado explicitamente como empate

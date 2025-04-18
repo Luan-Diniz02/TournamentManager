@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import br.com.luandiniz.tournamentmanager.R;
@@ -28,7 +29,7 @@ public class DueloAdapter extends RecyclerView.Adapter<DueloAdapter.DueloViewHol
     }
 
     public DueloAdapter(List<Duelo> duelos, List<Duelista> duelistas, OnResultadoSelecionadoListener listener, boolean torneioConcluido) {
-        this.duelos = duelos;
+        this.duelos = duelos != null ? duelos : new ArrayList<>();
         this.duelistas = duelistas;
         this.listener = listener;
         this.torneioConcluido = torneioConcluido;

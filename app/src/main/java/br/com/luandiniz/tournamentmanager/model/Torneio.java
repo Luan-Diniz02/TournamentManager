@@ -74,13 +74,4 @@ public class Torneio {
         this.topcut = topcut;
     }
 
-    public Duelista buscarDuelistaPorId(int id) {
-        for (Duelista duelista : duelistas) {
-            if (duelista.getId() == id) {
-                return duelista;
-            }
-        }
-        return null; // Retorna null se não encontrar o duelista
-    }
-
 }
