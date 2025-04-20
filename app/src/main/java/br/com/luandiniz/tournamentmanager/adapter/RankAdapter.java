@@ -113,7 +113,6 @@ public class RankAdapter extends RecyclerView.Adapter<RankAdapter.MyViewHolder> 
         notifyDataSetChanged();
     }
 
-    // Método para atualizar um item específico
     public void atualizarItem(int position, Duelista duelistaAtualizado) {
         if (position >= 0 && position < duelistas.size()) {
             duelistas.set(position, duelistaAtualizado);

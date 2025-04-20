@@ -12,10 +12,14 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -28,7 +32,7 @@ import br.com.luandiniz.tournamentmanager.model.Torneio;
 public class CriarTorneioFragment extends Fragment {
 
     private EditText nomeTorneio, nomeDuelista, rodadas;
-    private Button addDuelista, criarTorneio, addDuelistaHistorico;
+    private MaterialButton addDuelista, criarTorneio, addDuelistaHistorico;
     private CheckBox topCut;
     RankAdapter rankAdapter;
     private List<Duelista> duelistasTorneio;
@@ -47,6 +51,8 @@ public class CriarTorneioFragment extends Fragment {
 
         inicializaListener();
 
+        setupItemTouchHelper();
+
         return view;
     }
 
@@ -58,8 +64,7 @@ public class CriarTorneioFragment extends Fragment {
 
     private void inicializaListener() {
         rankAdapter.setOnItemClickListener((duelista, position) -> {
-            // Lógica quando clicar em um duelista
-
+            // Ação ao clicar no item
         });
 
         addDuelista.setOnClickListener(v -> {
@@ -251,4 +256,43 @@ public class CriarTorneioFragment extends Fragment {
             e.printStackTrace();
         }
     }
+
+    private void setupItemTouchHelper() {
+        ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(
+                0, ItemTouchHelper.RIGHT) {
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && position < duelistasTorneio.size()) {
+                    Duelista duelistaRemovido = duelistasTorneio.get(position);
+
+                    new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                            .setTitle("Remover Duelista")
+                            .setMessage("Tem certeza que deseja remover este duelista?")
+                            .setPositiveButton("Sim", (dialog, which) -> {
+                                    duelistasTorneio.remove(position);
+                                    carregaListaDuelista();
+                                    rankAdapter.atualizarLista(duelistasTorneio);
+                            })
+                            .setNegativeButton("Cancelar", (dialog, which) -> {
+                                rankAdapter.notifyItemChanged(position);
+                            })
+                            .setCancelable(false)
+                            .show();
+                }
+            }
+
+        };
+
+        new ItemTouchHelper(simpleCallback).attachToRecyclerView(recyclerView);
+    }
+
 }

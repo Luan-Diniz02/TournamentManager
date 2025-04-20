@@ -30,12 +30,12 @@
             android:hint="Nome do duelista"
             android:inputType="textCapWords"/>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/fragment_criar_btn_add_duelista"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="ADD"
-            android:layout_marginStart="8dp"/>
+            android:layout_marginStart="8dp"
+            android:text="ADD" />
     </LinearLayout>
 
     <LinearLayout
@@ -62,7 +62,7 @@
 
 
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/fragment_criar_btn_add_duelista_historico"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -79,7 +79,7 @@
         android:layout_marginBottom="16dp"/>
 
     <!-- Botão Iniciar -->
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/fragment_criar_btn_salvar_torneio"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

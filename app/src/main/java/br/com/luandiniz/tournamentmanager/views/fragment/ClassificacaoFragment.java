@@ -4,10 +4,16 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.button.MaterialButton;
+import com.leinardi.android.speeddial.SpeedDialView;
+
 import br.com.luandiniz.tournamentmanager.R;
 import br.com.luandiniz.tournamentmanager.adapter.RankAdapter;
 import br.com.luandiniz.tournamentmanager.dao.DAOSQLITE;
@@ -29,6 +35,7 @@ public class ClassificacaoFragment extends Fragment {
     private RecyclerView rvClassificacao;
     private RankAdapter adapter;
     private List<Duelista> duelistas;
+    private SpeedDialView speedDialView;
 
     public static ClassificacaoFragment newInstance(int torneioId) {
         ClassificacaoFragment fragment = new ClassificacaoFragment();
@@ -50,27 +57,71 @@ public class ClassificacaoFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_rank, container, false);
 
-        rvClassificacao = view.findViewById(R.id.recycler_view_duelistas);
-        rvClassificacao.setLayoutManager(new LinearLayoutManager(getContext()));
+        inicializaDAO();
 
+        inicializaView(view);
+
+        inicializaListener();
+
+        return view;
+    }
+
+    private void inicializaListener() {
+
+        speedDialView.setOnChangeListener(new SpeedDialView.OnChangeListener() {
+            @Override
+            public boolean onMainActionSelected() {
+                requireActivity().getSupportFragmentManager().popBackStack();
+                return false; // Impede abertura do menu
+            }
+
+            @Override
+            public void onToggleChanged(boolean isOpen) {
+                // Ignorado nesse caso
+            }
+        });
+
+    }
+
+    private void inicializaDAO() {
         dao = DAOSQLITE.getInstance(requireContext());
         duelistas = dao.listarDuelistasDoTorneio(torneioId);
 
-        // Calcular estatísticas específicas do torneio
-        Map<Integer, Duelista> duelistaMap = new HashMap<>();
-        for (Duelista duelista : duelistas) {
-            Duelista torneioDuelista = new Duelista(
-                    duelista.getNome(),
-                    0, // Inicializar vitórias como 0
-                    0, // Inicializar derrotas como 0
-                    0  // Inicializar empates como 0
-            );
-            torneioDuelista.setId(duelista.getId());
-            torneioDuelista.setPontos(0); // Inicializar pontos como 0
-            torneioDuelista.setParticipacao(1);
-            duelistaMap.put(duelista.getId(), torneioDuelista);
-        }
+        Map<Integer, Duelista> duelistaMap = carregaDuelistas();
 
+        carregaRodadas(duelistaMap);
+
+        carregaByes(duelistaMap);
+
+        ordenaDuelistas(duelistaMap);
+    }
+
+    private void ordenaDuelistas(Map<Integer, Duelista> duelistaMap) {
+        // Converter mapa para lista
+        duelistas = new ArrayList<>(duelistaMap.values());
+
+        // Ordenar duelistas por pontos (descendente), com desempate por vitórias
+        Collections.sort(duelistas, (d1, d2) -> {
+            int comparePontos = Integer.compare(d2.getPontos(), d1.getPontos());
+            if (comparePontos == 0) {
+                return Integer.compare(d2.getVitorias(), d1.getVitorias());
+            }
+            return comparePontos;
+        });
+    }
+
+    private void carregaByes(Map<Integer, Duelista> duelistaMap) {
+        // Incluir pontos de bye
+        Set<Integer> byes = dao.listarByes(torneioId);
+        for (Integer idDuelista : byes) {
+            Duelista duelista = duelistaMap.get(idDuelista);
+            if (duelista != null) {
+                duelista.setVitorias(duelista.getVitorias() + 1);
+            }
+        }
+    }
+
+    private void carregaRodadas(Map<Integer, Duelista> duelistaMap) {
         // Carregar rodadas do torneio
         List<Integer> rodadas = dao.listarRodadas(torneioId);
         for (Integer idRodada : rodadas) {
@@ -92,39 +143,41 @@ public class ClassificacaoFragment extends Fragment {
                         duelista2.setVitorias(duelista2.getVitorias() + 1);
                         duelista1.setDerrotas(duelista1.getDerrotas() + 1);
                     }
-                } else {
-                    // Empate (se não houver vencedor registrado)
+                } else if (duelo.isEmpate()){
                     duelista1.setEmpates(duelista1.getEmpates() + 1);
                     duelista2.setEmpates(duelista2.getEmpates() + 1);
                 }
             }
         }
+    }
 
-        // Incluir pontos de bye
-        Set<Integer> byes = dao.listarByes(torneioId);
-        for (Integer idDuelista : byes) {
-            Duelista duelista = duelistaMap.get(idDuelista);
-            if (duelista != null) {
-                duelista.setVitorias(duelista.getVitorias() + 1);
-            }
+    @NonNull
+    private Map<Integer, Duelista> carregaDuelistas() {
+        // Carregar duelistas e inicializar vitórias, derrotas e empates
+        Map<Integer, Duelista> duelistaMap = new HashMap<>();
+        for (Duelista duelista : duelistas) {
+            Duelista torneioDuelista = new Duelista(
+                    duelista.getNome(),
+                    0, // Inicializar vitórias como 0
+                    0, // Inicializar derrotas como 0
+                    0  // Inicializar empates como 0
+            );
+            torneioDuelista.setId(duelista.getId());
+            torneioDuelista.setParticipacao(1);
+            duelistaMap.put(duelista.getId(), torneioDuelista);
         }
+        return duelistaMap;
+    }
 
-        // Converter mapa para lista
-        duelistas = new ArrayList<>(duelistaMap.values());
+    private void inicializaView(View view) {
+        rvClassificacao = view.findViewById(R.id.recycler_view_duelistas);
+        rvClassificacao.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // Ordenar duelistas por pontos (descendente), com desempate por vitórias
-        Collections.sort(duelistas, (d1, d2) -> {
-            int comparePontos = Integer.compare(d2.getPontos(), d1.getPontos());
-            if (comparePontos == 0) {
-                return Integer.compare(d2.getVitorias(), d1.getVitorias());
-            }
-            return comparePontos;
-        });
+        speedDialView = view.findViewById(R.id.rank_fragment_speeddial_menu);
+        speedDialView.setMainFabClosedDrawable(getResources().getDrawable(R.drawable.ic_voltar));
 
         // Configurar o RankAdapter
         adapter = new RankAdapter(duelistas, getContext());
         rvClassificacao.setAdapter(adapter);
-
-        return view;
     }
 }

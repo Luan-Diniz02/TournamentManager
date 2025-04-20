@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
 import com.leinardi.android.speeddial.SpeedDialActionItem;
 import com.leinardi.android.speeddial.SpeedDialView;
 
@@ -88,6 +89,8 @@ public class RankFragment extends Fragment {
 
         // Inicializa SpeedDialView
         speedDialView = view.findViewById(R.id.rank_fragment_speeddial_menu);
+
+        speedDialView.setVisibility(View.VISIBLE);
 
         speedDialView.setMainFabClosedDrawable(getResources().getDrawable(R.drawable.ic_barra));
         speedDialView.addActionItem(new SpeedDialActionItem.Builder(R.id.menu_acao1, R.drawable.ic_add)
@@ -192,7 +195,6 @@ public class RankFragment extends Fragment {
         EditText editDerrotas = dialogView.findViewById(R.id.activity_edit_derrotas);
         EditText editEmpates = dialogView.findViewById(R.id.activity_edit_empates);
         EditText editParticipacao = dialogView.findViewById(R.id.activity_edit_participacao);
-
 
         // Preenche os campos com os dados atuais
         editNome.setText(duelista.getNome());
