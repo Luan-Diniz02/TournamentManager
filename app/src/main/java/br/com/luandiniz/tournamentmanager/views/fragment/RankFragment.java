@@ -1,5 +1,13 @@
 package br.com.luandiniz.tournamentmanager.views.fragment;
 
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.pdf.PdfDocument;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,6 +17,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -18,8 +27,14 @@ import com.google.android.material.button.MaterialButton;
 import com.leinardi.android.speeddial.SpeedDialActionItem;
 import com.leinardi.android.speeddial.SpeedDialView;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import br.com.luandiniz.tournamentmanager.R;
 import br.com.luandiniz.tournamentmanager.adapter.RankAdapter;
@@ -78,6 +93,11 @@ public class RankFragment extends Fragment {
                             .show();
                 }
             }
+            else if (actionItem.getId() == R.id.menu_acao3) {
+//                gerarPDF();
+                gerarPDFComCabecalho();
+                return true;
+            }
             return false; // Fecha o SpeedDial após a ação
         });
     }
@@ -99,6 +119,10 @@ public class RankFragment extends Fragment {
                 .create());
         speedDialView.addActionItem(new SpeedDialActionItem.Builder(R.id.menu_acao2, R.drawable.ic_remove)
                 .setLabel("Limpar Rank")
+                .setFabBackgroundColor(getResources().getColor(R.color.white))
+                .create());
+        speedDialView.addActionItem(new SpeedDialActionItem.Builder(R.id.menu_acao3, R.drawable.ic_rank)
+                .setLabel("Gerar PDF")
                 .setFabBackgroundColor(getResources().getColor(R.color.white))
                 .create());
 
@@ -337,4 +361,299 @@ public class RankFragment extends Fragment {
             builder.setNegativeButton("Cancelar", null);
             builder.show();
         }
+
+    // Adicione este método para gerar o PDF:
+    private void gerarPDF() {
+        if (duelistas.isEmpty()) {
+            Toast.makeText(getContext(), "Não há duelistas para gerar o PDF", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 1. Criar um bitmap com o tamanho total do RecyclerView
+        recyclerView.measure(
+                View.MeasureSpec.makeMeasureSpec(recyclerView.getWidth(), View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        );
+
+        int height = recyclerView.getMeasuredHeight();
+        Bitmap bitmap = Bitmap.createBitmap(recyclerView.getWidth(), height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+
+        // 2. Salvar estado atual do RecyclerView
+        RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
+        int scrollY = recyclerView.computeVerticalScrollOffset();
+
+        // 3. Desenhar todo o conteúdo no canvas
+        recyclerView.draw(canvas);
+
+        // 4. Restaurar posição original
+        recyclerView.scrollBy(0, -scrollY);
+
+        // 5. Criar o documento PDF
+        String fileName = "Rank_" + System.currentTimeMillis() + ".pdf";
+        File file = new File(requireContext().getExternalFilesDir(null), fileName);
+
+        try {
+            PdfDocument document = new PdfDocument();
+            PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(
+                    bitmap.getWidth(),
+                    bitmap.getHeight(),
+                    1
+            ).create();
+
+            PdfDocument.Page page = document.startPage(pageInfo);
+            Canvas pageCanvas = page.getCanvas();
+            pageCanvas.drawBitmap(bitmap, 0, 0, null);
+            document.finishPage(page);
+
+            // Salvar o documento
+            FileOutputStream fos = new FileOutputStream(file);
+            document.writeTo(fos);
+            document.close();
+            fos.close();
+            bitmap.recycle();
+
+            // Mostrar diálogo com opções
+            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+            builder.setTitle("PDF Gerado com Sucesso")
+                    .setMessage("O PDF foi salvo em:\n" + file.getAbsolutePath())
+                    .setPositiveButton("Abrir", (dialog, which) -> abrirPDF(file))
+                    .setNegativeButton("Compartilhar", (dialog, which) -> compartilharPDF(file))
+                    .setNeutralButton("OK", null)
+                    .show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(getContext(), "Erro ao gerar PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void gerarPDFComCabecalho() {
+        if (duelistas.isEmpty()) {
+            Toast.makeText(getContext(), "Não há duelistas para gerar o PDF", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            // Configurações do PDF
+            String fileName = "Rank_" + System.currentTimeMillis() + ".pdf";
+            File file = new File(requireContext().getExternalFilesDir(null), fileName);
+            PdfDocument document = new PdfDocument();
+
+            // Tamanho da página (A4 em pixels a 72dpi)
+            int pageWidth = 595;
+            int pageHeight = 842;
+
+            // Criar um Paint para texto
+            Paint paint = new Paint();
+            paint.setColor(Color.BLACK);
+
+            // Margens
+            int margin = 36;
+            int y = margin;
+
+            // Criar primeira página
+            PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(pageWidth, pageHeight, 1).create();
+            PdfDocument.Page page = document.startPage(pageInfo);
+            Canvas canvas = page.getCanvas();
+
+            // 1. Cabeçalho do PDF
+            paint.setTextSize(22);
+            paint.setFakeBoldText(true);
+            canvas.drawText("Tournament Manager", margin, y, paint);
+            y += 30;
+
+            paint.setTextSize(18);
+            canvas.drawText("Rank", margin, y, paint);
+            y += 30;
+
+            // 2. Cabeçalho da tabela
+            paint.setTextSize(12);
+            paint.setFakeBoldText(true);
+            canvas.drawText("Posição", margin, y, paint);
+            canvas.drawText("Duelistas", margin + 100, y, paint);
+            canvas.drawText("V", margin + 300, y, paint);
+            canvas.drawText("D", margin + 350, y, paint);
+            canvas.drawText("E", margin + 400, y, paint);
+            canvas.drawText("P", margin + 450, y, paint);
+            canvas.drawText("Pts", margin + 500, y, paint);
+            y += 20;
+
+            // Linha divisória
+            paint.setStrokeWidth(1);
+            canvas.drawLine(margin, y, pageWidth - margin, y, paint);
+            y += 30;
+
+            // 3. Conteúdo da tabela
+            paint.setFakeBoldText(false);
+            for (int i = 0; i < duelistas.size(); i++) {
+                Duelista d = duelistas.get(i);
+
+                // Verificar se precisa de nova página
+                if (y > pageHeight - margin - 30) {
+                    document.finishPage(page);
+                    pageInfo = new PdfDocument.PageInfo.Builder(pageWidth, pageHeight, document.getPages().size() + 1).create();
+                    page = document.startPage(pageInfo);
+                    canvas = page.getCanvas();
+                    y = margin;
+                }
+
+                canvas.drawText((i + 1) + "°", margin, y, paint);
+                canvas.drawText(d.getNome(), margin + 100, y, paint);
+                canvas.drawText(String.valueOf(d.getVitorias()), margin + 300, y, paint);
+                canvas.drawText(String.valueOf(d.getDerrotas()), margin + 350, y, paint);
+                canvas.drawText(String.valueOf(d.getEmpates()), margin + 400, y, paint);
+                canvas.drawText(String.valueOf(d.getParticipacao()), margin + 450, y, paint);
+                canvas.drawText(String.valueOf(d.getPontos()), margin + 500, y, paint);
+
+                y += 30;
+            }
+
+            document.finishPage(page);
+
+            // Salvar o documento
+            FileOutputStream fos = new FileOutputStream(file);
+            document.writeTo(fos);
+            document.close();
+            fos.close();
+
+            // Mostrar diálogo com opções
+            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+            builder.setTitle("PDF Gerado com Sucesso")
+                    .setMessage("O PDF foi salvo em:\n" + file.getAbsolutePath())
+                    .setPositiveButton("Abrir", (dialog, which) -> abrirPDF(file))
+                    .setNegativeButton("Compartilhar", (dialog, which) -> compartilharPDF(file))
+                    .setNeutralButton("OK", null)
+                    .show();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(getContext(), "Erro ao gerar PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void gerarPDFMultiplasPaginas() {
+        if (duelistas.isEmpty()) {
+            Toast.makeText(getContext(), "Não há duelistas para gerar o PDF", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            // Configurações do PDF
+            String fileName = "Rank_" + System.currentTimeMillis() + ".pdf";
+            File file = new File(requireContext().getExternalFilesDir(null), fileName);
+            PdfDocument document = new PdfDocument();
+
+            // Tamanho da página (A4 em pixels a 72dpi)
+            int pageWidth = 595;
+            int pageHeight = 842;
+
+            // Criar um Paint para texto
+            Paint paint = new Paint();
+            paint.setColor(Color.BLACK);
+            paint.setTextSize(12);
+
+            // Margens
+            int margin = 36;
+            int y = margin + 30;
+
+            // Criar primeira página
+            PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(pageWidth, pageHeight, 1).create();
+            PdfDocument.Page page = document.startPage(pageInfo);
+            Canvas canvas = page.getCanvas();
+
+            // Cabeçalho
+            paint.setTextSize(18);
+            canvas.drawText("Ranking de Duelistas", margin, y, paint);
+            y += 30;
+
+            paint.setTextSize(12);
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+            canvas.drawText("Gerado em: " + sdf.format(new Date()), margin, y, paint);
+            y += 30;
+
+            // Cabeçalho da tabela
+            canvas.drawText("Posição", margin, y, paint);
+            canvas.drawText("Nome", margin + 100, y, paint);
+            canvas.drawText("Vitórias", margin + 300, y, paint);
+            canvas.drawText("Derrotas", margin + 400, y, paint);
+            canvas.drawText("Empates", margin + 500, y, paint);
+            y += 20;
+
+            // Linha divisória
+            canvas.drawLine(margin, y, pageWidth - margin, y, paint);
+            y += 30;
+
+            // Adicionar cada duelista
+            for (int i = 0; i < duelistas.size(); i++) {
+                Duelista d = duelistas.get(i);
+
+                // Verificar se precisa de nova página
+                if (y > pageHeight - margin) {
+                    document.finishPage(page);
+                    pageInfo = new PdfDocument.PageInfo.Builder(pageWidth, pageHeight, document.getPages().size() + 1).create();
+                    page = document.startPage(pageInfo);
+                    canvas = page.getCanvas();
+                    y = margin + 30;
+                }
+
+                canvas.drawText(String.valueOf(i + 1), margin, y, paint);
+                canvas.drawText(d.getNome(), margin + 100, y, paint);
+                canvas.drawText(String.valueOf(d.getVitorias()), margin + 300, y, paint);
+                canvas.drawText(String.valueOf(d.getDerrotas()), margin + 400, y, paint);
+                canvas.drawText(String.valueOf(d.getEmpates()), margin + 500, y, paint);
+
+                y += 30;
+            }
+
+            document.finishPage(page);
+
+            // Salvar o documento
+            FileOutputStream fos = new FileOutputStream(file);
+            document.writeTo(fos);
+            document.close();
+            fos.close();
+
+            // Mostrar diálogo com opções
+            AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+            builder.setTitle("PDF Gerado com Sucesso")
+                    .setMessage("O PDF foi salvo em:\n" + file.getAbsolutePath())
+                    .setPositiveButton("Abrir", (dialog, which) -> abrirPDF(file))
+                    .setNegativeButton("Compartilhar", (dialog, which) -> compartilharPDF(file))
+                    .setNeutralButton("OK", null)
+                    .show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(getContext(), "Erro ao gerar PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void abrirPDF(File file) {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        Uri uri = FileProvider.getUriForFile(requireContext(),
+                requireContext().getPackageName() + ".provider", file);
+
+        intent.setDataAndType(uri, "application/pdf");
+        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(getContext(), "Nenhum visualizador de PDF instalado", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void compartilharPDF(File file) {
+        Uri uri = FileProvider.getUriForFile(requireContext(),
+                requireContext().getPackageName() + ".provider", file);
+
+        Intent shareIntent = new Intent();
+        shareIntent.setAction(Intent.ACTION_SEND);
+        shareIntent.setType("application/pdf");
+        shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
+        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        startActivity(Intent.createChooser(shareIntent, "Compartilhar PDF via"));
+    }
     }
