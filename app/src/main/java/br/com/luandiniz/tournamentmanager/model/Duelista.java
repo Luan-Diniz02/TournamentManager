@@ -1,6 +1,6 @@
 package br.com.luandiniz.tournamentmanager.model;
 
-public class Duelista {
+public class Duelista implements Comparable<Duelista> {
     private String nome;
     private int vitorias, derrotas, empates, pontos, id, participacoes;
 
@@ -97,6 +97,27 @@ public class Duelista {
     }
 
 
+    @Override
+    public int compareTo(Duelista duelista) {
+        // Primeiro compara por pontos (ordem decrescente)
+        int comparacaoPontos = Integer.compare(duelista.pontos, this.pontos);
+        if (comparacaoPontos != 0) {
+            return comparacaoPontos;
+        }
 
+        // Se pontos iguais, compara por vitórias (ordem decrescente)
+        int comparacaoVitorias = Integer.compare(duelista.vitorias, this.vitorias);
+        if (comparacaoVitorias != 0) {
+            return comparacaoVitorias;
+        }
 
+        // Se vitórias iguais, compara por derrotas (ordem crescente)
+        int comparacaoDerrotas = Integer.compare(this.derrotas, duelista.derrotas);
+        if (comparacaoDerrotas != 0) {
+            return comparacaoDerrotas;
+        }
+
+        // Se tudo igual, pode-se comparar por nome (ordem alfabética)
+        return this.nome.compareToIgnoreCase(duelista.nome);
+    }
 }

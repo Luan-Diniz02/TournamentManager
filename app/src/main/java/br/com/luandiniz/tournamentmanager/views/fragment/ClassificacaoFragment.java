@@ -100,14 +100,7 @@ public class ClassificacaoFragment extends Fragment {
         // Converter mapa para lista
         duelistas = new ArrayList<>(duelistaMap.values());
 
-        // Ordenar duelistas por pontos (descendente), com desempate por vitórias
-        Collections.sort(duelistas, (d1, d2) -> {
-            int comparePontos = Integer.compare(d2.getPontos(), d1.getPontos());
-            if (comparePontos == 0) {
-                return Integer.compare(d2.getVitorias(), d1.getVitorias());
-            }
-            return comparePontos;
-        });
+        Collections.sort(duelistas);
     }
 
     private void carregaByes(Map<Integer, Duelista> duelistaMap) {

@@ -276,7 +276,7 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
         if (rodada == 1) {
             Collections.shuffle(duelistasOrdenados);
         } else {
-            duelistasOrdenados.sort((d1, d2) -> Integer.compare(d2.getPontos(), d1.getPontos()));
+              Collections.sort(duelistasOrdenados);
         }
 
         List<Duelista> duelistasNaoPareados = new ArrayList<>(duelistasOrdenados);

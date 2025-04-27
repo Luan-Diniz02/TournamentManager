@@ -174,22 +174,7 @@ public class RankFragment extends Fragment {
     }
 
     private void ordenarDuelistas() {
-        Collections.sort(duelistas, (d1, d2) -> {
-            // Primeiro compara por pontos (maior primeiro)
-            int comparePontos = Integer.compare(d2.getPontos(), d1.getPontos());
-            if (comparePontos != 0) {
-                return comparePontos;
-            }
-
-            // Se pontos iguais, compara por vitórias (maior primeiro)
-            int compareVitorias = Integer.compare(d2.getVitorias(), d1.getVitorias());
-            if (compareVitorias != 0) {
-                return compareVitorias;
-            }
-
-            // Se vitórias iguais, compara por derrotas (menor primeiro)
-            return Integer.compare(d1.getDerrotas(), d2.getDerrotas());
-        });
+        Collections.sort(duelistas);
     }
 
     private void dialogEdicao(Duelista duelista, int position) {
