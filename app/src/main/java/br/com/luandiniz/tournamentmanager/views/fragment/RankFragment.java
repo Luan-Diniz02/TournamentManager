@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Locale;
 
 import br.com.luandiniz.tournamentmanager.PDFGenerator;
+import br.com.luandiniz.tournamentmanager.PDFUtils;
 import br.com.luandiniz.tournamentmanager.R;
 import br.com.luandiniz.tournamentmanager.adapter.RankAdapter;
 import br.com.luandiniz.tournamentmanager.dao.DAOSQLITE;
@@ -392,52 +393,10 @@ public class RankFragment extends Fragment {
     }
 
     private void abrirPDF(File file) {
-        try {
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-
-            // Usando FileProvider para criar a URI
-            Uri uri = FileProvider.getUriForFile(
-                    requireContext(),
-                    requireContext().getPackageName() + ".provider",
-                    file
-            );
-
-            intent.setDataAndType(uri, "application/pdf");
-            intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-            // Verifica se há algum app que pode lidar com PDFs
-            PackageManager pm = requireContext().getPackageManager();
-            if (intent.resolveActivity(pm) != null) {
-                startActivity(intent);
-            } else {
-                Toast.makeText(getContext(), "Nenhum visualizador de PDF instalado", Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception e) {
-            Toast.makeText(getContext(), "Erro ao abrir PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            e.printStackTrace();
-        }
+        PDFUtils.abrirPDF(requireContext(), file);
     }
 
     private void compartilharPDF(File file) {
-        try {
-            Intent shareIntent = new Intent();
-            shareIntent.setAction(Intent.ACTION_SEND);
-
-            // Usando FileProvider para criar a URI
-            Uri uri = FileProvider.getUriForFile(
-                    requireContext(),
-                    requireContext().getPackageName() + ".provider",
-                    file
-            );
-
-            shareIntent.setType("application/pdf");
-            shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
-            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-            startActivity(Intent.createChooser(shareIntent, "Compartilhar PDF via"));
-        } catch (Exception e) {
-            Toast.makeText(getContext(), "Erro ao compartilhar PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            e.printStackTrace();
-        }
+        PDFUtils.compartilharPDF(requireContext(), file);
     }
     }
