@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Caminho para arquivos externos privados do seu app -->
+    <external-files-path name="external_files" path="." />
+
+    <!-- Caminho alternativo para a pasta de downloads públicos -->
+    <external-path name="downloads" path="Download/" />
+
+    <!-- Caminho para arquivos internos privados do seu app -->
+    <files-path name="files" path="." />
+</paths>

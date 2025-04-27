@@ -2,6 +2,7 @@ package br.com.luandiniz.tournamentmanager.views.fragment;
 
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -121,7 +122,7 @@ public class RankFragment extends Fragment {
                 .setLabel("Limpar Rank")
                 .setFabBackgroundColor(getResources().getColor(R.color.white))
                 .create());
-        speedDialView.addActionItem(new SpeedDialActionItem.Builder(R.id.menu_acao3, R.drawable.ic_rank)
+        speedDialView.addActionItem(new SpeedDialActionItem.Builder(R.id.menu_acao3, R.drawable.ic_pdf)
                 .setLabel("Gerar PDF")
                 .setFabBackgroundColor(getResources().getColor(R.color.white))
                 .create());
@@ -630,30 +631,52 @@ public class RankFragment extends Fragment {
     }
 
     private void abrirPDF(File file) {
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        Uri uri = FileProvider.getUriForFile(requireContext(),
-                requireContext().getPackageName() + ".provider", file);
-
-        intent.setDataAndType(uri, "application/pdf");
-        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
         try {
-            startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(getContext(), "Nenhum visualizador de PDF instalado", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+
+            // Usando FileProvider para criar a URI
+            Uri uri = FileProvider.getUriForFile(
+                    requireContext(),
+                    requireContext().getPackageName() + ".provider",
+                    file
+            );
+
+            intent.setDataAndType(uri, "application/pdf");
+            intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            // Verifica se há algum app que pode lidar com PDFs
+            PackageManager pm = requireContext().getPackageManager();
+            if (intent.resolveActivity(pm) != null) {
+                startActivity(intent);
+            } else {
+                Toast.makeText(getContext(), "Nenhum visualizador de PDF instalado", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "Erro ao abrir PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
         }
     }
 
     private void compartilharPDF(File file) {
-        Uri uri = FileProvider.getUriForFile(requireContext(),
-                requireContext().getPackageName() + ".provider", file);
+        try {
+            Intent shareIntent = new Intent();
+            shareIntent.setAction(Intent.ACTION_SEND);
 
-        Intent shareIntent = new Intent();
-        shareIntent.setAction(Intent.ACTION_SEND);
-        shareIntent.setType("application/pdf");
-        shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
-        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            // Usando FileProvider para criar a URI
+            Uri uri = FileProvider.getUriForFile(
+                    requireContext(),
+                    requireContext().getPackageName() + ".provider",
+                    file
+            );
 
-        startActivity(Intent.createChooser(shareIntent, "Compartilhar PDF via"));
+            shareIntent.setType("application/pdf");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            startActivity(Intent.createChooser(shareIntent, "Compartilhar PDF via"));
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "Erro ao compartilhar PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+        }
     }
     }
