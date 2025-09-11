@@ -15,9 +15,11 @@ import br.com.luandiniz.tournamentmanager.model.Duelista;
 
 public class PDFGenerator {
     private final Context context;
+    private String dataAtualizacao;
 
-    public PDFGenerator(Context context) {
+    public PDFGenerator(Context context, String dataAtualizacao) {
         this.context = context;
+        this.dataAtualizacao = dataAtualizacao;
     }
 
     public File generateRankPDF(List<Duelista> duelistas, String title) throws IOException {
@@ -52,6 +54,14 @@ public class PDFGenerator {
         paint.setTextSize(18);
         canvas.drawText("Rank", margin, y, paint);
         y += 30;
+
+        //Desenhar a data no PDF
+        if(!dataAtualizacao.isEmpty()){
+            paint.setTextSize(12);
+            paint.setFakeBoldText(true);
+            canvas.drawText("Atualizado em: " + dataAtualizacao, margin+375, y, paint);
+            y += 20;
+        }
 
         // 2. Cabeçalho da tabela
         paint.setTextSize(12);

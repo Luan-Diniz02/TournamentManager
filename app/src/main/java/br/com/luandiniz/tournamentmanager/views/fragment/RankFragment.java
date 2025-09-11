@@ -1,5 +1,6 @@
 package br.com.luandiniz.tournamentmanager.views.fragment;
 
+import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,9 +20,9 @@ import com.leinardi.android.speeddial.SpeedDialView;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 import br.com.luandiniz.tournamentmanager.PDFGenerator;
 import br.com.luandiniz.tournamentmanager.PDFUtils;
@@ -83,11 +84,41 @@ public class RankFragment extends Fragment {
                 }
             }
             else if (actionItem.getId() == R.id.menu_acao3) {
-                gerarPDF();
+                dialogEscolherDataAtualizacao();
                 return true;
             }
             return false; // Fecha o SpeedDial após a ação
         });
+    }
+
+    // Adicione este metodo para gerar o PDF com data opcional:
+    private void dialogEscolherDataAtualizacao() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Incluir Data de Atualização?")
+                .setMessage("Deseja incluir a data em que o rank foi atualizado pela última vez no PDF?")
+                .setPositiveButton("Sim", (dialog, which) -> {
+                    // Mostrar DatePickerDialog para escolher a data
+                    final Calendar c = Calendar.getInstance();
+                    int mYear = c.get(Calendar.YEAR);
+                    int mMonth = c.get(Calendar.MONTH);
+                    int mDay = c.get(Calendar.DAY_OF_MONTH);
+
+                    DatePickerDialog datePickerDialog = new DatePickerDialog(requireContext(),
+                            (view, year, monthOfYear, dayOfMonth) -> {
+                                String dataSelecionada = dayOfMonth + "/" + (monthOfYear + 1) + "/" + year;
+                                gerarPDF(dataSelecionada);
+                            }, mYear, mMonth, mDay);
+                    datePickerDialog.show();
+                })
+                .setNegativeButton("Não", (dialog, which) -> {
+                    // Gerar PDF sem data
+                    gerarPDF("");
+                })
+                .setNeutralButton("Sair", (dialog, which) -> {
+                    // Simplesmente fecha o diálogo
+                    dialog.dismiss();
+                })
+                .show();
     }
 
     private void inicializaView(View view) {
@@ -340,15 +371,15 @@ public class RankFragment extends Fragment {
             builder.show();
         }
 
-    // Adicione este metodo para gerar o PDF:
-    private void gerarPDF() {
+    // Método para gerar o PDF, agora com parâmetro de data
+    private void gerarPDF(String dataAtualizacao) {
         if (duelistas.isEmpty()) {
             Toast.makeText(getContext(), "Não há duelistas para gerar o PDF", Toast.LENGTH_SHORT).show();
             return;
         }
 
         try {
-            PDFGenerator pdfGenerator = new PDFGenerator(requireContext());
+            PDFGenerator pdfGenerator = new PDFGenerator(requireContext(), dataAtualizacao); // Passa a data para o construtor
             File pdfFile = pdfGenerator.generateRankPDF(duelistas, "Tournament Manager");
 
             mostrarDialogoSucesso(pdfFile);
