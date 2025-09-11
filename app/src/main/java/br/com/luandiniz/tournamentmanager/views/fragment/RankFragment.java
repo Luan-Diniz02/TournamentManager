@@ -242,15 +242,13 @@ public class RankFragment extends Fragment {
 
                 // Atualiza no banco de dados
                 daosqlite.atualizarDuelista(duelista);
+
+                carregarDuelistas();
             } catch (NumberFormatException e) {
                 Toast.makeText(requireContext(), "Por favor, insira valores válidos.", Toast.LENGTH_SHORT).show();
             } catch (Exception e) {
                 Toast.makeText(requireContext(), "Erro ao atualizar duelista: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
-
-
-            // Atualiza a lista
-            carregarDuelistas();
         });
 
         builder.setNegativeButton("Cancelar", null);

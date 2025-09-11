@@ -109,7 +109,8 @@ public class RankAdapter extends RecyclerView.Adapter<RankAdapter.MyViewHolder> 
     }
 
     public void atualizarLista(List<Duelista> novaLista) {
-        this.duelistas = novaLista;
+        this.duelistas.clear();
+        this.duelistas.addAll(novaLista);
         notifyDataSetChanged();
     }
 
