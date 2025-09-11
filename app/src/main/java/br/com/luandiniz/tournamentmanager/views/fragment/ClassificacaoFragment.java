@@ -4,14 +4,12 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.button.MaterialButton;
 import com.leinardi.android.speeddial.SpeedDialView;
 
 import br.com.luandiniz.tournamentmanager.R;
@@ -32,8 +30,6 @@ public class ClassificacaoFragment extends Fragment {
     private static final String ARG_TORNEIO_ID = "torneio_id";
     private int torneioId;
     private DAOSQLITE dao;
-    private RecyclerView rvClassificacao;
-    private RankAdapter adapter;
     private List<Duelista> duelistas;
     private SpeedDialView speedDialView;
 
@@ -163,14 +159,14 @@ public class ClassificacaoFragment extends Fragment {
     }
 
     private void inicializaView(View view) {
-        rvClassificacao = view.findViewById(R.id.recycler_view_duelistas);
+        RecyclerView rvClassificacao = view.findViewById(R.id.recycler_view_duelistas);
         rvClassificacao.setLayoutManager(new LinearLayoutManager(getContext()));
 
         speedDialView = view.findViewById(R.id.rank_fragment_speeddial_menu);
         speedDialView.setMainFabClosedDrawable(getResources().getDrawable(R.drawable.ic_voltar));
 
         // Configurar o RankAdapter
-        adapter = new RankAdapter(duelistas, getContext());
+        RankAdapter adapter = new RankAdapter(duelistas, getContext());
         rvClassificacao.setAdapter(adapter);
     }
 }
