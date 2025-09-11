@@ -165,8 +165,7 @@ public class RankFragment extends Fragment {
                         // Adicionar no banco de dados
                         DAOSQLITE.getInstance(getContext()).adicionarDuelista(novoDuelista);
 
-                        // Atualizar o RankFragment
-                        atualizarListaDuelistas();
+                        carregarDuelistas();
                     } catch (NumberFormatException e) {
                         Toast.makeText(getContext(), "Por favor, insira valores válidos", Toast.LENGTH_SHORT).show();
                     } catch (Exception e) {
@@ -177,12 +176,7 @@ public class RankFragment extends Fragment {
                 .show();
     }
 
-    private void atualizarListaDuelistas() {
-        Fragment currentFragment = getParentFragmentManager().findFragmentById(R.id.container);
-        if (currentFragment instanceof RankFragment) {
-            ((RankFragment) currentFragment).carregarDuelistas();
-        }
-    }
+
 
     public void carregarDuelistas() {
         // Inicializa DAO e carrega dados
