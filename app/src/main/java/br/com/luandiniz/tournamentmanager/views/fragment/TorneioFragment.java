@@ -1,7 +1,6 @@
 package br.com.luandiniz.tournamentmanager.views.fragment;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,7 +53,6 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
     private List<Duelo> duelosAtuais;
     private int rodadaAtual;
     private int rodadaVisualizada;
-    private RecyclerView rvDuelos;
     private TextView tvRodada, tvEstadoTorneio;
     private LinearLayout layoutNavegacaoRodadas;
     private MaterialButton btnSalvar, btnVoltar, btnEstatisticas, btnSair, btnRodadaAnterior, btnProximaRodada;
@@ -207,7 +206,7 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
 
     private void inicializaViews(View view) {
         // Inicializar views
-        rvDuelos = view.findViewById(R.id.rv_duelos);
+        RecyclerView rvDuelos = view.findViewById(R.id.rv_duelos);
         tvRodada = view.findViewById(R.id.tvRodada);
         tvEstadoTorneio = view.findViewById(R.id.tvEstadoTorneio);
         layoutNavegacaoRodadas = view.findViewById(R.id.layoutNavegacaoRodadas);
@@ -254,8 +253,8 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
         if (rodada <= rodadas.size()) {
             duelos = dao.listarDuelosPorRodada(rodadas.get(rodada - 1), torneioId);
             for (Duelo duelo : duelos) {
-                confrontosAnteriores.get(duelo.getIdDuelista1()).add(duelo.getIdDuelista2());
-                confrontosAnteriores.get(duelo.getIdDuelista2()).add(duelo.getIdDuelista1());
+                Objects.requireNonNull(confrontosAnteriores.get(duelo.getIdDuelista1())).add(duelo.getIdDuelista2());
+                Objects.requireNonNull(confrontosAnteriores.get(duelo.getIdDuelista2())).add(duelo.getIdDuelista1());
             }
         } else {
             Toast.makeText(getContext(), "Nenhum duelo carregado para a rodada " + rodada, Toast.LENGTH_SHORT).show();
@@ -298,7 +297,7 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
 
             for (int i = 1; i < duelistasNaoPareados.size(); i++) {
                 Duelista possivelOponente = duelistasNaoPareados.get(i);
-                if (!confrontosAnteriores.get(duelista1.getId()).contains(possivelOponente.getId())) {
+                if (!Objects.requireNonNull(confrontosAnteriores.get(duelista1.getId())).contains(possivelOponente.getId())) {
                     duelista2 = possivelOponente;
                     break;
                 }
@@ -313,8 +312,8 @@ public class TorneioFragment extends Fragment implements DueloAdapter.OnResultad
                 long dueloId = dao.adicionarDuelo(idRodada, duelo.getIdDuelista1(), duelo.getIdDuelista2(), null);
                 duelo.setId((int) dueloId);
                 duelos.add(duelo);
-                confrontosAnteriores.get(duelista1.getId()).add(duelista2.getId());
-                confrontosAnteriores.get(duelista2.getId()).add(duelista1.getId());
+                Objects.requireNonNull(confrontosAnteriores.get(duelista1.getId())).add(duelista2.getId());
+                Objects.requireNonNull(confrontosAnteriores.get(duelista2.getId())).add(duelista1.getId());
                 duelistasNaoPareados.remove(duelista1);
                 duelistasNaoPareados.remove(duelista2);
             } else {
