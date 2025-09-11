@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -19,9 +18,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 import br.com.luandiniz.tournamentmanager.R;
 import br.com.luandiniz.tournamentmanager.adapter.RankAdapter;
@@ -117,13 +116,9 @@ public class CriarTorneioFragment extends Fragment {
         }
 
         Duelista duelista;
-        if (existente != null) {
-            // Usa o duelista existente
-            duelista = existente;
-        } else {
-            // Cria novo duelista (sem ID ainda)
-            duelista = new Duelista(nome);
-        }
+        // Usa o duelista existente
+        // Cria novo duelista (sem ID ainda)
+        duelista = Objects.requireNonNullElseGet(existente, () -> new Duelista(nome));
 
         // Verifica se já não foi adicionado ao torneio
         for (Duelista d : duelistasTorneio) {
