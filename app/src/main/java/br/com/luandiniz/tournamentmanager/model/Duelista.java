@@ -10,7 +10,7 @@ public class Duelista implements Comparable<Duelista> {
         this.derrotas = derrotas;
         this.empates = empates;
         this.participacoes = 1;
-        this.pontos = vitorias*3 + empates + participacoes;
+        this.pontos = vitorias * 3 + empates + participacoes;
     }
 
     public Duelista(String nome){
@@ -19,7 +19,7 @@ public class Duelista implements Comparable<Duelista> {
         this.derrotas = 0;
         this.empates = 0;
         this.participacoes = 0;
-        this.pontos = vitorias*3 + empates + participacoes;
+        this.pontos = 0;
     }
 
     public Duelista(Duelista outro) {
@@ -29,7 +29,7 @@ public class Duelista implements Comparable<Duelista> {
         this.vitorias = outro.vitorias;
         this.derrotas = outro.derrotas;
         this.empates = outro.empates;
-        // copiar outros campos conforme necessário
+        this.participacoes = outro.participacoes;
     }
 
     public String getNome() {
