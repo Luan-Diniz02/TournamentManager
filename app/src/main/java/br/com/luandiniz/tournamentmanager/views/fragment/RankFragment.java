@@ -1,14 +1,5 @@
 package br.com.luandiniz.tournamentmanager.views.fragment;
 
-import android.content.ActivityNotFoundException;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.pdf.PdfDocument;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,24 +9,19 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
-import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.button.MaterialButton;
 import com.leinardi.android.speeddial.SpeedDialActionItem;
 import com.leinardi.android.speeddial.SpeedDialView;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
+import java.util.Objects;
 
 import br.com.luandiniz.tournamentmanager.PDFGenerator;
 import br.com.luandiniz.tournamentmanager.PDFUtils;
@@ -77,12 +63,12 @@ public class RankFragment extends Fragment {
             }
             else if (actionItem.getId() == R.id.menu_acao2) {
                 // Verifica se a lista de duelistas está vazia
-                if(duelistas.isEmpty() || duelistas.size() == 0) {
+                if(duelistas.isEmpty()) {
                     Toast.makeText(getContext(), "Não há duelistas para remover", Toast.LENGTH_SHORT).show();
                 }
                 else{
                     // Limpar o rank
-                    new AlertDialog.Builder(getContext())
+                    new AlertDialog.Builder(requireContext())
                             .setTitle("Limpar Rank")
                             .setMessage("Tem certeza que deseja limpar o rank?")
                             .setPositiveButton("Sim", (dialog, which) -> {
@@ -130,14 +116,12 @@ public class RankFragment extends Fragment {
 
         // Configura o adapter
         rankAdapter = new RankAdapter(duelistas, getContext());
-        rankAdapter.setOnItemClickListener((duelista, position) -> {
-            abrirOpcoesDuelista(duelista, position);
-        });
+        rankAdapter.setOnItemClickListener(this::abrirOpcoesDuelista);
         recyclerView.setAdapter(rankAdapter);
     }
 
     private void dialogAdicionarDuelista() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setTitle("Adicionar Duelista");
 
         View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.activity_add_duelista, null);
@@ -356,7 +340,7 @@ public class RankFragment extends Fragment {
             builder.show();
         }
 
-    // Adicione este método para gerar o PDF:
+    // Adicione este metodo para gerar o PDF:
     private void gerarPDF() {
         if (duelistas.isEmpty()) {
             Toast.makeText(getContext(), "Não há duelistas para gerar o PDF", Toast.LENGTH_SHORT).show();
