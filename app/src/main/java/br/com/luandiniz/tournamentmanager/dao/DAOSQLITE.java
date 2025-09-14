@@ -6,8 +6,12 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Environment;
 import android.util.Log;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -544,4 +548,96 @@ public class DAOSQLITE extends SQLiteOpenHelper {
             if (db != null && db.isOpen()) db.close();
         }
     }
+
+    public boolean exportarBancoDados(Context context, String nomeArquivo) {
+        try {
+            // Caminho do banco de dados interno
+            String dbPath = context.getDatabasePath("torneios").getAbsolutePath();
+            File dbFile = new File(dbPath);
+
+            if (!dbFile.exists()) {
+                Log.e("DAOSQLITE", "Banco de dados não encontrado");
+                return false;
+            }
+
+            // Diretório de Downloads do dispositivo
+            File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            File exportFile = new File(downloadsDir, nomeArquivo + ".db");
+
+            // Copiar o arquivo do banco
+            try (FileInputStream fis = new FileInputStream(dbFile);
+                 FileOutputStream fos = new FileOutputStream(exportFile)) {
+
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = fis.read(buffer)) > 0) {
+                    fos.write(buffer, 0, length);
+                }
+                fos.flush();
+            }
+
+            Log.i("DAOSQLITE", "Banco exportado para: " + exportFile.getAbsolutePath());
+            return true;
+
+        } catch (Exception e) {
+            Log.e("DAOSQLITE", "Erro ao exportar banco: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean importarBancoDados(Context context, String caminhoArquivo) {
+        try {
+            File importFile = new File(caminhoArquivo);
+
+            if (!importFile.exists()) {
+                Log.e("DAOSQLITE", "Arquivo de importação não encontrado");
+                return false;
+            }
+
+            // Fechar conexões existentes
+            close();
+
+            // Caminho do banco de dados interno
+            String dbPath = context.getDatabasePath("torneios").getAbsolutePath();
+            File dbFile = new File(dbPath);
+
+            // Fazer backup do banco atual (opcional)
+            if (dbFile.exists()) {
+                File backupFile = new File(dbPath + ".backup");
+                try (FileInputStream fis = new FileInputStream(dbFile);
+                     FileOutputStream fos = new FileOutputStream(backupFile)) {
+
+                    byte[] buffer = new byte[1024];
+                    int length;
+                    while ((length = fis.read(buffer)) > 0) {
+                        fos.write(buffer, 0, length);
+                    }
+                }
+            }
+
+            // Importar o novo banco
+            try (FileInputStream fis = new FileInputStream(importFile);
+                 FileOutputStream fos = new FileOutputStream(dbFile)) {
+
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = fis.read(buffer)) > 0) {
+                    fos.write(buffer, 0, length);
+                }
+                fos.flush();
+            }
+
+            // Recriar a instância do DAO
+            instance = null;
+            instance = getInstance(context);
+
+            Log.i("DAOSQLITE", "Banco importado com sucesso");
+            return true;
+
+        } catch (Exception e) {
+            Log.e("DAOSQLITE", "Erro ao importar banco: " + e.getMessage());
+            return false;
+        }
+    }
+
 }
